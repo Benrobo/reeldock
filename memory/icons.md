@@ -18,6 +18,7 @@ import { CameraVideoIcon } from "@benrobo/iconary/core/duotone-rounded";
 - Read `.agents/skills/benrobo-iconary/SKILL.md` before adding or changing icons.
 - Use `duotone-rounded` for product UI icons.
 - Use `twotone-rounded` only for brand or social icons.
+- Style icon size, alignment, and color through Tailwind wrapper classes plus Iconary `size` and `color="currentColor"`.
 - Verify icon exports in `~/projects/iconary/dist/generated/core/<style>/index.d.ts`.
 - Do not use `lucide-react`, inline SVG, `@app/icons`, or local icon registries.
 - Do not copy files from `~/projects/design-icons` into this repo.

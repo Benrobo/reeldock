@@ -10,16 +10,16 @@ The product source of truth is [docs/ReelDock_PRD.md](docs/ReelDock_PRD.md). Rep
 
 ## Read Before You Write
 
-| Task type                | Files to read first                                                             |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| First task in this repo  | `docs/ReelDock_PRD.md`, `memory/architecture.md`, `memory/conventions.md`       |
-| Desktop UI work          | `apps/desktop/src/App.tsx`, `apps/desktop/src/styles.css`, `memory/patterns.md` |
-| Marketing page work      | `apps/marketing/src/app/page.tsx`, `apps/marketing/src/app/globals.css`         |
-| Project file changes     | `packages/project-schema/src/index.ts`, `memory/patterns.md`                    |
-| Native capture work      | `docs/ReelDock_PRD.md` sections 10, 12, 13, 18, and 20                          |
-| Adding or changing icons | `.agents/skills/benrobo-iconary/SKILL.md`, `memory/icons.md`                    |
-| Conductor setup          | `.conductor/settings.toml`, `memory/conventions.md`                             |
-| Adding skills            | `.agents/README.md`, `scripts/install-skills.sh`                                |
+| Task type                | Files to read first                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| First task in this repo  | `docs/ReelDock_PRD.md`, `memory/architecture.md`, `memory/conventions.md`                |
+| Desktop UI work          | `apps/desktop/src/App.tsx`, `packages/tailwind-config/globals.css`, `memory/patterns.md` |
+| Marketing page work      | `apps/marketing/src/app/page.tsx`, `packages/tailwind-config/globals.css`                |
+| Project file changes     | `packages/project-schema/src/index.ts`, `memory/patterns.md`                             |
+| Native capture work      | `docs/ReelDock_PRD.md` sections 10, 12, 13, 18, and 20                                   |
+| Adding or changing icons | `.agents/skills/benrobo-iconary/SKILL.md`, `memory/icons.md`                             |
+| Conductor setup          | `.conductor/settings.toml`, `memory/conventions.md`                                      |
+| Adding skills            | `.agents/README.md`, `scripts/install-skills.sh`                                         |
 
 ## Hard Rules
 
@@ -30,6 +30,7 @@ The product source of truth is [docs/ReelDock_PRD.md](docs/ReelDock_PRD.md). Rep
 - Treat iPhone capture as the riskiest milestone. Prove native detection, recording, timestamps, disconnection behavior, and sync before expanding the editor.
 - Do not promise Android, cloud rendering, AI editing, captions, or a full timeline editor for MVP work unless the PRD changes.
 - Do not commit recordings, exports, `.env` files, build output, or local `.reeldock` project folders.
+- Do not add app-specific CSS for normal product layout. Use Tailwind classes and shared tokens from `@reeldock/tailwind-config`.
 - Do not use `lucide-react`, inline SVG, or local icon registries. Use `@benrobo/iconary`.
 - Do not add AI agents as contributors in commits. No `Co-authored-by`, `Generated-by`, or similar agent attribution trailers.
 
@@ -48,14 +49,15 @@ Verify exact export names before importing. The package is configured through th
 
 ## Package Boundaries
 
-| Location                  | Responsibility                                                              |
-| ------------------------- | --------------------------------------------------------------------------- |
-| `apps/desktop`            | Tauri app shell, React UI, Tauri command calls, desktop workflow            |
-| `apps/marketing`          | Public Next.js landing page for mainstream launch testing                   |
-| `packages/project-schema` | Versioned `.reeldock/project.json` validation and inferred TypeScript types |
-| `packages/shared`         | Product constants, layout presets, source state types, phase metadata       |
-| `docs`                    | Product requirements and planning docs                                      |
-| `memory`                  | Agent-readable architecture, patterns, decisions, lessons, glossary         |
+| Location                   | Responsibility                                                                |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `apps/desktop`             | Tauri app shell, React UI, Tauri command calls, desktop workflow              |
+| `apps/marketing`           | Public Next.js landing page for mainstream launch testing                     |
+| `packages/project-schema`  | Versioned `.reeldock/project.json` validation and inferred TypeScript types   |
+| `packages/shared`          | Product constants, layout presets, source state types, phase metadata         |
+| `packages/tailwind-config` | Shared Tailwind v4 globals, theme tokens, fonts, and TypeScript token exports |
+| `docs`                     | Product requirements and planning docs                                        |
+| `memory`                   | Agent-readable architecture, patterns, decisions, lessons, glossary           |
 
 ## Available Skills
 

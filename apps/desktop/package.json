@@ -4,11 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "tauri dev",
+    "dev": "PATH=\"$HOME/.cargo/bin:$PATH\" tauri dev",
     "vite:dev": "vite --host 127.0.0.1 --port 1420",
     "build": "vite build",
     "build:web": "vite build",
-    "tauri:build": "tauri build",
+    "tauri:build": "PATH=\"$HOME/.cargo/bin:$PATH\" tauri build",
     "lint": "tsc -p tsconfig.json --noEmit",
     "type-check": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist src-tauri/target *.tsbuildinfo"
@@ -17,15 +17,18 @@
     "@benrobo/iconary": "^0.2.0",
     "@reeldock/project-schema": "workspace:*",
     "@reeldock/shared": "workspace:*",
+    "@reeldock/tailwind-config": "workspace:*",
     "@tauri-apps/api": "^2.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
     "@tauri-apps/cli": "^2.5.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
   }

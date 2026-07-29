@@ -1,0 +1,25 @@
+{
+  "name": "@reeldock/tailwind-config",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./theme.ts",
+  "types": "./theme.ts",
+  "exports": {
+    ".": "./theme.ts",
+    "./fonts": "./fonts.ts",
+    "./globals.css": "./globals.css",
+    "./theme": "./theme.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf *.tsbuildinfo"
+  },
+  "dependencies": {
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

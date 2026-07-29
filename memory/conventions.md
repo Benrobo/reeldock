@@ -8,6 +8,7 @@
 - Tauri is the desktop runtime.
 - Rust owns native coordination.
 - Next.js owns the marketing surface.
+- Tailwind CSS owns app styling through the shared `@reeldock/tailwind-config` package.
 
 ## Files
 
@@ -15,6 +16,7 @@
 - `apps/desktop` is the Tauri app.
 - `apps/marketing` is the public landing page.
 - Shared TypeScript packages live in `packages/*`.
+- Shared Tailwind tokens live in `packages/tailwind-config`.
 - Product and planning docs live in `docs/`.
 - Durable agent context lives in `memory/`.
 - Package names use the `@reeldock/*` scope.
@@ -23,6 +25,15 @@
 ## Comments
 
 Do not add inline comments to code. Prefer clear names and small functions. When a non-obvious constraint must be preserved, use a short doc string above the exported declaration or add the explanation to `memory/`.
+
+## Styling
+
+- Apps import `@reeldock/tailwind-config/globals.css` from their global CSS entry point.
+- Vite apps use `@tailwindcss/vite`.
+- Next apps use `@tailwindcss/postcss` through `postcss.config.mjs`.
+- Use Tailwind utilities for layout, spacing, typography, state, and component styling.
+- Add shared colors, radii, fonts, or base behavior in `packages/tailwind-config`, not per-app CSS files.
+- Keep app CSS entry points as imports unless a browser reset or third-party integration cannot be represented with utilities.
 
 ## Native Media
 

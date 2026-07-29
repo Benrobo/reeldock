@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@source "../../apps/**/*.{ts,tsx}";
+@source "../../packages/**/*.{ts,tsx}";
+
+@theme {
+  --color-dock-50: oklch(97% 0.018 153);
+  --color-dock-100: oklch(93% 0.045 153);
+  --color-dock-200: oklch(86% 0.077 153);
+  --color-dock-300: oklch(77% 0.11 153);
+  --color-dock-400: oklch(68% 0.13 153);
+  --color-dock-500: oklch(59% 0.12 153);
+  --color-dock-600: oklch(49% 0.095 153);
+  --color-dock-700: oklch(39% 0.07 153);
+  --color-dock-800: oklch(29% 0.048 153);
+  --color-dock-900: oklch(21% 0.032 153);
+  --color-ink: oklch(20% 0.02 154);
+  --color-paper: oklch(98% 0.012 92);
+  --color-muted: oklch(52% 0.018 154);
+  --color-panel: oklch(100% 0.002 92);
+  --color-panel-warm: oklch(96.5% 0.018 92);
+  --color-line: oklch(87% 0.014 140);
+  --color-night: oklch(16% 0.028 162);
+  --color-night-panel: oklch(21% 0.034 162);
+  --color-coral: oklch(68% 0.16 34);
+  --color-gold: oklch(78% 0.11 83);
+  --color-aqua: oklch(77% 0.09 179);
+  --color-steel: oklch(34% 0.04 224);
+  --color-success: oklch(63% 0.15 148);
+  --color-warning: oklch(76% 0.14 81);
+  --color-danger: oklch(61% 0.19 29);
+  --color-info: oklch(66% 0.12 232);
+  --font-sans:
+    "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@custom-variant dark ([data-theme="dark"] &);
+
+[data-theme="dark"] {
+  --color-ink: oklch(96% 0.014 92);
+  --color-paper: oklch(14% 0.026 162);
+  --color-muted: oklch(70% 0.02 153);
+  --color-panel: oklch(19% 0.032 162);
+  --color-panel-warm: oklch(23% 0.028 92);
+  --color-line: oklch(32% 0.026 153);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background-color: var(--color-dock-200);
+    color: var(--color-ink);
+  }
+}

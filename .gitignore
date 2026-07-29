@@ -10,6 +10,7 @@ out/
 *.tsbuildinfo
 target/
 src-tauri/target/
+apps/*/src-tauri/gen/
 
 .cache/
 .parcel-cache/
