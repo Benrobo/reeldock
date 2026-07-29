@@ -1,0 +1,19 @@
+{
+  "skills": {
+    "benrobo-iconary": {
+      "source": "/Users/benaiah/projects/talli/.agents/skills/benrobo-iconary"
+    },
+    "find-skills": {
+      "source": "/Users/benaiah/projects/ai-fullstack-starter/.agents/skills/find-skills"
+    },
+    "frontend-design": {
+      "source": "/Users/benaiah/projects/ai-fullstack-starter/.agents/skills/frontend-design"
+    },
+    "karpathy-guidelines": {
+      "source": "/Users/benaiah/projects/ai-fullstack-starter/.agents/skills/karpathy-guidelines"
+    },
+    "web-perf": {
+      "source": "/Users/benaiah/projects/ai-fullstack-starter/.agents/skills/web-perf"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "reeldock",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "ReelDock monorepo for a macOS Tauri app that records polished mobile-app demos from phone, webcam, and microphone sources.",
+  "packageManager": "bun@1.2.19",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --concurrency=20",
+    "dev:desktop": "turbo run dev --filter=@reeldock/desktop",
+    "dev:marketing": "turbo run dev --filter=@reeldock/marketing",
+    "tauri:build": "turbo run tauri:build --filter=@reeldock/desktop",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "turbo run clean",
+    "skills:install": "bash scripts/install-skills.sh"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "turbo": "^2.5.0",
+    "typescript": "^5.7.2"
+  }
+}

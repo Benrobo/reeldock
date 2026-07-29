@@ -1,0 +1,26 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "bun install"
+run_mode = "nonconcurrent"
+
+[scripts.run.desktop]
+available_in = [ "local" ]
+command = "bun run dev:desktop"
+default = true
+icon = "monitor"
+
+[scripts.run.marketing]
+available_in = [ "local", "cloud" ]
+command = "bun run dev:marketing"
+icon = "globe"
+
+[scripts.run.type_check]
+available_in = [ "local", "cloud" ]
+command = "bun run type-check"
+icon = "test-tube"
+
+[scripts.run.format_check]
+available_in = [ "local", "cloud" ]
+command = "bun run format:check"
+icon = "braces"
