@@ -26,5 +26,10 @@
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"]
+  },
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:reeldock.db"]
+    }
   }
 }

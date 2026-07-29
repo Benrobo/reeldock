@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@benrobo/iconary": "^0.2.0",
+    "@reeldock/shared": "workspace:*",
     "@reeldock/tailwind-config": "workspace:*",
     "@reeldock/ui": "workspace:*",
     "@tanstack/react-router": "^1.91.0",

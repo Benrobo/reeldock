@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  html,body{margin:0;padding:0;background:#131211;-webkit-font-smoothing:antialiased;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,sans-serif;color:#f2efea;}
+  ::selection{background:rgba(255,255,255,.16);}
+  a{color:#f2efea;text-decoration:none;}
+  a:hover{color:oklch(0.72 0.14 252);}
+  button,input{font-family:inherit;-webkit-tap-highlight-color:transparent;}
+  button{transition:transform .26s cubic-bezier(.34,1.56,.64,1),background .18s ease,border-color .18s ease,color .18s ease;}
+  button:active{transform:translateY(1.5px);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)!important;transition-duration:.1s;transition-timing-function:ease-out;}
+  input{outline:none;}
+  input::placeholder{color:#6f6a63;}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#131211;">
+
+  <div style="position:sticky;top:0;z-index:30;background:rgba(19,18,17,.86);backdrop-filter:blur(14px);border-bottom:1px solid #241f1e;">
+    <div style="max-width:1160px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;gap:28px;">
+      <a href="#top" style="display:flex;align-items:center;gap:9px;">
+        <img src="uploads/reeldock-logo.png" alt="ReelDock" style="width:25px;height:25px;display:block;" />
+        <span style="font-size:15.5px;font-weight:600;letter-spacing:-.02em;">ReelDock</span>
+      </a>
+      <div style="flex:1;"></div>
+      <div style="display:flex;align-items:center;gap:24px;font-size:13.5px;color:#a6a19a;">
+        <a href="#how">How it works</a>
+        <a href="#sources">Sources</a>
+        <a href="#formats">Formats</a>
+        <a href="#faq">Questions</a>
+      </div>
+      <button onClick="{{ focusEmail }}" style="padding:8px 15px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));border:1px solid oklch(0.48 0.14 252);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.4);color:#fff;" style-hover="background:linear-gradient(180deg,oklch(0.72 0.15 252),oklch(0.62 0.16 252));">Join the waitlist</button>
+    </div>
+  </div>
+
+  <div id="top" style="max-width:1160px;margin:0 auto;padding:78px 28px 0;text-align:center;">
+    <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 9px;border-radius:100px;background:#24221f;border:1px solid #33302b;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);font-size:12px;color:#a6a19a;white-space:nowrap;">
+      <span style="display:block;width:6px;height:6px;border-radius:50%;background:oklch(0.68 0.15 252);box-shadow:0 0 0 3px rgba(90,130,240,.18);"></span>
+      macOS &middot; in development &middot; iPhone first
+    </div>
+
+    <h1 style="font-size:clamp(44px,5.6vw,72px);line-height:1.02;letter-spacing:-.038em;font-weight:600;margin:24px 0 0;text-wrap:balance;">Record your app.<br>Frame your story.</h1>
+
+    <p style="font-size:18px;line-height:1.55;color:#a6a19a;max-width:600px;margin:22px auto 0;text-wrap:pretty;">Plug your iPhone into your Mac, press record, and walk through your app. ReelDock captures the phone, your face and your voice at once &mdash; then gives you one small editor to put them together.</p>
+
+    <div id="waitlist" style="display:flex;justify-content:center;margin-top:30px;">
+      <sc-if value="{{ notJoined }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="email" placeholder="you@yourstartup.com" value="{{ emailVal }}" onInput="{{ onEmail }}" onKeyDown="{{ onKey }}" style="width:262px;padding:10px 14px;border-radius:9px;background:#1a1817;border:1px solid #33302b;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);font-size:14px;color:#f2efea;" />
+          <button onClick="{{ join }}" style="padding:11px 19px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;white-space:nowrap;" style-hover="background:linear-gradient(180deg,#ffffff,#f1eee8);">Join the waitlist</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ joined }}">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:11px;background:#24221f;border:1px solid #33302b;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+          <span style="display:flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:oklch(0.62 0.14 252);color:#fff;font-size:11px;font-weight:700;">&#10003;</span>
+          <span style="font-size:14px;color:#f2efea;">You're on the list. One email, the day it's ready.</span>
+        </div>
+      </sc-if>
+    </div>
+    <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#8d8880;margin-top:14px;">{{ countLine }}</div>
+  </div>
+
+  <div style="max-width:1160px;margin:0 auto;padding:56px 28px 0;">
+    <div style="border-radius:16px;overflow:hidden;background:#1e1c1a;border:1px solid #33302b;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 30px 80px -40px rgba(0,0,0,.95);">
+      <div style="height:34px;display:flex;align-items:center;padding:0 13px;background:#241f1e;border-bottom:1px solid #171514;">
+        <div style="display:flex;gap:7px;">
+          <span style="display:block;width:11px;height:11px;border-radius:50%;background:#ff5f57;"></span>
+          <span style="display:block;width:11px;height:11px;border-radius:50%;background:#febc2e;"></span>
+          <span style="display:block;width:11px;height:11px;border-radius:50%;background:#28c840;"></span>
+        </div>
+        <div style="flex:1;text-align:center;font-size:12px;color:#8d8880;white-space:nowrap;">Elorah &mdash; Reading Plan</div>
+        <div style="width:56px;"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:11px;padding:11px 14px;background:#211f1c;border-bottom:1px solid #171514;">
+        <button style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#f2efea;white-space:nowrap;">Projects</button>
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;">Elorah &mdash; Reading Plan</div>
+        <div style="font-size:11.5px;color:#8d8880;">Saved</div>
+        <div style="flex:1;"></div>
+        <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#1a1817;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);width:168px;">
+          <div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);width:calc((100% - 6px) / 3);left:3px;"></div>
+          <span style="position:relative;flex:1;padding:6px 0;text-align:center;font-size:11.5px;font-weight:600;color:#f2efea;">16:9</span>
+          <span style="position:relative;flex:1;padding:6px 0;text-align:center;font-size:11.5px;font-weight:600;color:#8d8880;">9:16</span>
+          <span style="position:relative;flex:1;padding:6px 0;text-align:center;font-size:11.5px;font-weight:600;color:#8d8880;">1:1</span>
+        </div>
+        <button style="padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;">Export</button>
+      </div>
+
+      <div style="display:flex;height:428px;">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:26px;background:#171514;">
+          <div style="position:relative;width:100%;max-width:660px;aspect-ratio:16/9;border-radius:4px;background:#F4F2EC;box-shadow:0 18px 44px -22px rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;">
+            <div style="position:relative;height:84%;aspect-ratio:9/19.5;border-radius:18px;background:#16150f;padding:3px;box-shadow:0 10px 26px -10px rgba(0,0,0,.55);">
+              <div style="position:relative;width:100%;height:100%;border-radius:15px;overflow:hidden;background:#FBFAF6;display:flex;flex-direction:column;">
+                <div style="position:absolute;left:50%;top:4px;transform:translateX(-50%);width:34%;height:9px;border-radius:6px;background:#16150f;z-index:2;"></div>
+                <div style="padding:16px 12px 0;">
+                  <div style="font-size:5px;font-weight:700;letter-spacing:.12em;color:#9c968a;text-transform:uppercase;">Day 12 of 30</div>
+                  <div style="font-size:12.5px;font-weight:600;line-height:1.14;letter-spacing:-.022em;margin-top:4px;color:#17150f;">Wisdom for<br>the morning</div>
+                  <div style="height:3px;border-radius:2px;background:#e7e2d6;margin-top:10px;overflow:hidden;"><span style="display:block;width:40%;height:100%;background:#17150f;"></span></div>
+                  <div style="font-size:4.5px;color:#9c968a;margin-top:4px;">12 of 30 days complete</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:5px;padding:12px 10px 0;">
+                  <sc-for list="{{ phoneRows }}" as="p" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:6px;padding:6px 7px;border-radius:6px;background:#f3f0e8;border:1px solid #e7e2d6;">
+                      <span style="display:flex;align-items:center;justify-content:center;width:11px;height:11px;border-radius:3px;background:#e7e2d6;font-size:5px;font-weight:700;color:#6e6a63;">{{ p.n }}</span>
+                      <span style="flex:1;"><span style="display:block;font-size:5.5px;font-weight:600;color:#17150f;">{{ p.title }}</span><span style="display:block;font-size:4.5px;color:#9c968a;">{{ p.sub }}</span></span>
+                      <span style="display:block;width:8px;height:8px;border-radius:50%;border:1px solid #d8d2c4;"></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="position:absolute;right:7%;bottom:12%;width:20%;aspect-ratio:1;border-radius:50%;background:#ded9cd;border:2px solid #fff;box-shadow:0 8px 20px -8px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:8px;letter-spacing:.08em;color:#6b6559;text-transform:uppercase;">Camera</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:228px;flex-shrink:0;background:#211f1c;border-left:1px solid #171514;padding:17px 16px;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8d8880;">Layout</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
+            <div style="height:46px;border-radius:9px;background:#1a1817;border:1px solid #302d29;"></div>
+            <div style="height:46px;border-radius:9px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid oklch(0.58 0.16 252);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);"></div>
+            <div style="height:46px;border-radius:9px;background:#1a1817;border:1px solid #302d29;"></div>
+            <div style="height:46px;border-radius:9px;background:#1a1817;border:1px solid #302d29;"></div>
+          </div>
+          <div style="height:1px;background:#2e2b27;margin:17px 0;"></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#a6a19a;"><span>Phone size</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#f2efea;">62%</span></div>
+          <div style="height:6px;border-radius:3px;background:#1a1817;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);margin-top:10px;position:relative;">
+            <span style="position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:3px;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));"></span>
+            <span style="position:absolute;left:62%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:0 1px 3px rgba(0,0,0,.5);"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#a6a19a;margin-top:18px;"><span>Background</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#f2efea;">Bone</span></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <span style="display:block;width:26px;height:26px;border-radius:50%;background:#F4F2EC;box-shadow:0 0 0 1px #211f1c,0 0 0 3px oklch(0.58 0.16 252);"></span>
+            <span style="display:block;width:26px;height:26px;border-radius:50%;background:#16150f;border:1px solid #47423b;"></span>
+            <span style="display:block;width:26px;height:26px;border-radius:50%;background:#2e3f49;border:1px solid #47423b;"></span>
+            <span style="display:block;width:26px;height:26px;border-radius:50%;background:#3b3733;border:1px solid #47423b;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:74px;background:#211f1c;border-top:1px solid #171514;display:flex;align-items:center;gap:14px;padding:0 16px;">
+        <button style="width:32px;height:32px;border-radius:50%;flex-shrink:0;cursor:pointer;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;">
+          <span style="display:block;width:0;height:0;border-left:8px solid #16150f;border-top:5px solid transparent;border-bottom:5px solid transparent;margin-left:2px;"></span>
+        </button>
+        <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#f2efea;flex-shrink:0;">00:18 <span style="color:#8d8880;">/ 01:04</span></span>
+        <div style="flex:1;height:38px;border-radius:8px;background:#1a1817;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);position:relative;overflow:hidden;display:flex;align-items:center;gap:2px;padding:0 5px;">
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="46">
+            <span style="{{ b.style }}"></span>
+          </sc-for>
+          <span style="position:absolute;left:27%;top:0;bottom:0;width:2px;background:#f2efea;box-shadow:0 0 8px rgba(0,0,0,.6);"></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px;">
+      <sc-for list="{{ facts }}" as="fact" hint-placeholder-count="4">
+        <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:18px 20px 19px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+          <div style="font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1;">{{ fact.n }}</div>
+          <div style="font-size:13px;color:#a6a19a;margin-top:8px;line-height:1.4;">{{ fact.label }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div id="how" style="max-width:1160px;margin:0 auto;padding:92px 28px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8d8880;">How it works</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-top:12px;">
+      <h2 style="font-size:clamp(30px,3.4vw,40px);line-height:1.08;letter-spacing:-.03em;font-weight:600;margin:0;max-width:560px;text-wrap:balance;">Making one demo video shouldn't take a whole afternoon</h2>
+      <p style="font-size:15px;line-height:1.6;color:#a6a19a;max-width:430px;margin:0;text-wrap:pretty;">Today it's a chain of small annoying jobs, and every one of them is a chance to get something wrong. ReelDock is four steps, and the last one is a file on your desktop.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px;">
+      <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+        <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:20px 20px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:7px;background:#1a1817;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;font-weight:600;color:#a6a19a;">{{ s.n }}</span>
+          <div style="font-size:16.5px;font-weight:600;letter-spacing:-.02em;margin-top:15px;">{{ s.title }}</div>
+          <div style="font-size:13.5px;line-height:1.55;color:#a6a19a;margin-top:7px;text-wrap:pretty;">{{ s.text }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div id="sources" style="max-width:1160px;margin:0 auto;padding:92px 28px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8d8880;">Sources</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-top:12px;">
+      <h2 style="font-size:clamp(30px,3.4vw,40px);line-height:1.08;letter-spacing:-.03em;font-weight:600;margin:0;max-width:520px;text-wrap:balance;">Three recordings, kept apart on purpose</h2>
+      <p style="font-size:15px;line-height:1.6;color:#a6a19a;max-width:430px;margin:0;text-wrap:pretty;">One clock, three files. Nothing is baked together while you record, so when you change your mind about the layout afterwards &mdash; and you will &mdash; you don't shoot it again.</p>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);margin-top:30px;">
+      <div style="position:relative;display:flex;flex-direction:column;gap:10px;">
+        <sc-for list="{{ tracks }}" as="t" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:132px;flex-shrink:0;">
+              <div style="font-size:13.5px;font-weight:600;">{{ t.label }}</div>
+              <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#8d8880;margin-top:3px;">{{ t.file }}</div>
+            </div>
+            <div style="{{ t.laneStyle }}">
+              <sc-for list="{{ t.cells }}" as="c" hint-placeholder-count="20">
+                <span style="{{ c }}"></span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <span style="position:absolute;left:calc(148px + (100% - 148px) * 0.38);top:-4px;bottom:-4px;width:2px;background:#f2efea;border-radius:1px;"></span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:26px;margin-top:20px;padding-top:17px;border-top:1px solid #2e2b27;font-size:13px;color:#a6a19a;">
+        <span>Move the camera anywhere, any time.</span>
+        <span>Mute a source without touching the rest.</span>
+        <span>Re-export in a different shape tomorrow.</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;">
+      <sc-for list="{{ features }}" as="f" hint-placeholder-count="6">
+        <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:20px 20px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;">{{ f.title }}</div>
+          <div style="font-size:13.5px;line-height:1.55;color:#a6a19a;margin-top:7px;text-wrap:pretty;">{{ f.text }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div id="formats" style="max-width:1160px;margin:0 auto;padding:92px 28px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8d8880;">Formats</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-top:12px;">
+      <div>
+        <h2 style="font-size:clamp(30px,3.4vw,40px);line-height:1.08;letter-spacing:-.03em;font-weight:600;margin:0;max-width:460px;text-wrap:balance;">One take, whatever shape you need</h2>
+        <p style="font-size:15px;line-height:1.6;color:#a6a19a;max-width:460px;margin:14px 0 0;text-wrap:pretty;">Record once. Export wide for your site, tall for Reels, square for the feed.</p>
+      </div>
+      <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#1a1817;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);width:230px;">
+        <div style="{{ thumbStyle }}"></div>
+        <sc-for list="{{ ratioTabs }}" as="tab" hint-placeholder-count="3">
+          <button onClick="{{ tab.go }}" style="{{ tab.style }}">{{ tab.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);margin-top:26px;padding:44px 28px;display:flex;align-items:center;justify-content:center;gap:40px;min-height:420px;">
+      <sc-for list="{{ ratioFrames }}" as="r" hint-placeholder-count="3">
+        <div style="{{ r.wrapStyle }}">
+          <div style="{{ r.canvasStyle }}">
+            <div style="{{ r.phoneStyle }}">
+              <span style="position:absolute;left:50%;top:5%;transform:translateX(-50%);width:34%;height:4.5%;border-radius:99px;background:#3b3733;"></span>
+            </div>
+            <div style="{{ r.camStyle }}"></div>
+          </div>
+          <div style="text-align:center;margin-top:14px;">
+            <div style="font-size:13.5px;font-weight:600;">{{ r.label }}</div>
+            <div style="font-size:12px;color:#8d8880;margin-top:3px;">{{ r.use }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="max-width:1160px;margin:0 auto;padding:92px 28px 0;">
+    <div style="display:grid;grid-template-columns:1fr 1.15fr;gap:14px;align-items:stretch;">
+      <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:26px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8d8880;">Scope</div>
+        <h2 style="font-size:26px;line-height:1.15;letter-spacing:-.025em;font-weight:600;margin:14px 0 0;text-wrap:balance;">Things it doesn't do, so nobody's disappointed</h2>
+        <p style="font-size:14.5px;line-height:1.6;color:#a6a19a;margin:14px 0 0;text-wrap:pretty;">ReelDock does one job. It isn't trying to be your video editor, and it won't pretend to get around anything Apple doesn't allow. Some of this arrives later. Some of it never will, and that's fine.</p>
+      </div>
+      <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px 26px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);display:grid;grid-template-columns:1fr 1fr;column-gap:26px;align-content:center;">
+        <sc-for list="{{ notYet }}" as="n" hint-placeholder-count="12">
+          <div style="display:flex;gap:10px;align-items:baseline;padding:8px 0;">
+            <span style="display:block;width:8px;height:1.5px;background:#5f5b55;flex-shrink:0;position:relative;top:-4px;"></span>
+            <span style="flex:1;display:block;font-size:13.5px;color:#a6a19a;line-height:1.45;">{{ n }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;">
+      <sc-for list="{{ needs }}" as="n" hint-placeholder-count="3">
+        <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:20px 20px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+          <span style="display:inline-block;padding:3px 9px;border-radius:100px;background:#1a1817;border:1px solid #302d29;font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8d8880;">{{ n.tag }}</span>
+          <div style="font-size:16px;font-weight:600;letter-spacing:-.02em;margin-top:14px;">{{ n.title }}</div>
+          <div style="font-size:13.5px;line-height:1.55;color:#a6a19a;margin-top:7px;text-wrap:pretty;">{{ n.text }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div id="faq" style="max-width:1160px;margin:0 auto;padding:92px 28px 0;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8d8880;">Questions</div>
+    <h2 style="font-size:clamp(30px,3.4vw,40px);line-height:1.08;letter-spacing:-.03em;font-weight:600;margin:12px 0 0;">Fair questions</h2>
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);margin-top:26px;overflow:hidden;">
+      <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="7">
+        <div style="{{ q.rowStyle }}">
+          <button onClick="{{ q.go }}" style="width:100%;display:flex;align-items:center;gap:16px;padding:18px 22px;background:none;border:none;cursor:pointer;text-align:left;">
+            <span style="flex:1;font-size:15.5px;font-weight:600;letter-spacing:-.015em;color:#f2efea;">{{ q.q }}</span>
+            <span style="{{ q.signStyle }}">{{ q.sign }}</span>
+          </button>
+          <sc-if value="{{ q.open }}">
+            <div style="padding:0 70px 20px 22px;font-size:14.5px;line-height:1.6;color:#a6a19a;text-wrap:pretty;">{{ q.a }}</div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="max-width:1160px;margin:0 auto;padding:92px 28px 0;">
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);padding:56px 40px 60px;text-align:center;">
+      <img src="uploads/reeldock-logo.png" alt="" style="width:64px;height:64px;display:block;margin:0 auto;" />
+      <h2 style="font-size:clamp(28px,3.2vw,38px);line-height:1.08;letter-spacing:-.03em;font-weight:600;margin:20px 0 0;text-wrap:balance;">Be there when it opens</h2>
+      <p style="font-size:16px;line-height:1.55;color:#a6a19a;max-width:440px;margin:14px auto 0;text-wrap:pretty;">Leave your email and we'll tell you the day you can download it. No newsletter, no drip campaign, nothing else.</p>
+      <div style="display:flex;justify-content:center;margin-top:26px;">
+        <sc-if value="{{ notJoined }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="email" placeholder="you@yourstartup.com" value="{{ emailVal }}" onInput="{{ onEmail }}" onKeyDown="{{ onKey }}" style="width:248px;padding:10px 14px;border-radius:9px;background:#1a1817;border:1px solid #33302b;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);font-size:14px;color:#f2efea;" />
+            <button onClick="{{ join }}" style="padding:11px 19px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));border:1px solid oklch(0.48 0.14 252);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.4);color:#fff;white-space:nowrap;" style-hover="background:linear-gradient(180deg,oklch(0.72 0.15 252),oklch(0.62 0.16 252));">Join the waitlist</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ joined }}">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:11px;background:#1a1817;border:1px solid #33302b;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);">
+            <span style="display:flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:oklch(0.62 0.14 252);color:#fff;font-size:11px;font-weight:700;">&#10003;</span>
+            <span style="font-size:14px;">Got it &mdash; you'll hear from us once.</span>
+          </div>
+        </sc-if>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#8d8880;margin-top:14px;">{{ countLine }}</div>
+    </div>
+  </div>
+
+  <div style="max-width:1160px;margin:64px auto 0;padding:22px 28px 56px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;border-top:1px solid #241f1e;">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <img src="uploads/reeldock-logo.png" alt="" style="width:20px;height:20px;display:block;" />
+      <span style="font-size:13.5px;font-weight:600;">ReelDock</span>
+    </div>
+    <span style="font-size:13px;color:#8d8880;white-space:nowrap;">Record your app. Frame your story.</span>
+    <div style="flex:1;"></div>
+    <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#8d8880;white-space:nowrap;">Made on a Mac, for Mac &middot; 2026</span>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;waitlistCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:340,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:99999,&quot;section&quot;:&quot;Waitlist&quot;}}">
+class Component extends DCLogic {
+  state = { email:'', joined:false, ratio:0, faq:0 };
+
+  join = () => { if(/.+@.+\..+/.test(this.state.email)) this.setState({joined:true}); };
+  focusEmail = () => {
+    const el = document.querySelector('#waitlist input');
+    if(el){ window.scrollTo({top:0,behavior:'smooth'}); el.focus({preventScroll:true}); }
+  };
+
+  renderVals(){
+    const s = this.state, count = this.props.waitlistCount ?? 340;
+
+    const RAT = [
+      {label:'16:9', use:'Site hero, YouTube', ar:16/9, h:224},
+      {label:'9:16', use:'Reels, Shorts, TikTok', ar:9/16, h:312},
+      {label:'1:1',  use:'Feed posts, X', ar:1, h:258}
+    ];
+
+    const ratioFrames = RAT.map((r,i) => {
+      const on = s.ratio === i, h = on ? r.h : r.h*0.74, tall = r.ar < 1;
+      return {
+        label:r.label, use:r.use,
+        wrapStyle:{transition:'opacity .3s ease',opacity:on?1:.4},
+        canvasStyle:{position:'relative',height:h+'px',width:(h*r.ar)+'px',borderRadius:'5px',background:'#F4F2EC',
+          boxShadow:on?'0 20px 46px -22px rgba(0,0,0,.9)':'0 6px 16px -10px rgba(0,0,0,.7)',
+          transition:'height .3s cubic-bezier(.32,.72,0,1),width .3s cubic-bezier(.32,.72,0,1),box-shadow .3s ease',
+          display:'flex',alignItems:'center',justifyContent:'center'},
+        phoneStyle:{position:'relative',height:tall?'62%':'80%',aspectRatio:'9 / 19.5',borderRadius:'9px',background:'#16150f',
+          transform:tall?'translateY(-13%)':'none',transition:'height .3s ease,transform .3s ease'},
+        camStyle:{position:'absolute',borderRadius:'50%',background:'#ded9cd',border:'2px solid #fff',
+          width:tall?'26%':'22%',aspectRatio:'1',right:tall?'50%':'8%',bottom:tall?'8%':'10%',
+          transform:tall?'translateX(50%)':'none',transition:'all .3s ease'}
+      };
+    });
+
+    const bars = Array.from({length:46},(_,i)=>{
+      const cut = i>=34 && i<=39, played = i < 12;
+      return {style:{flex:1,height:(28+Math.sin(i*1.7)*9+Math.cos(i*0.8)*5)+'%',borderRadius:'1px',
+        background: cut ? '#2a2724' : played ? 'oklch(0.66 0.14 252)' : '#4a453e'}};
+    });
+
+    const lane = {flex:1,height:'56px',borderRadius:'9px',background:'#1a1817',border:'1px solid #302d29',
+      boxShadow:'inset 0 1px 3px rgba(0,0,0,.45)',display:'flex',alignItems:'center',gap:'4px',padding:'0 10px',overflow:'hidden'};
+
+    const tracks = [
+      {label:'Phone', file:'phone.mov', laneStyle:lane,
+       cells:Array.from({length:20},(_,i)=>({width:'16px',height:'34px',flexShrink:0,borderRadius:'3px',
+         background:'#e7e2d6',opacity:0.45+((i*7)%5)/12}))},
+      {label:'Camera', file:'webcam.mov', laneStyle:lane,
+       cells:Array.from({length:20},(_,i)=>({width:'30px',height:'30px',flexShrink:0,borderRadius:'50%',
+         background:'#47423b',border:'1px solid #55504a',opacity:0.6+((i*3)%5)/12}))},
+      {label:'Microphone', file:'microphone.m4a', laneStyle:{...lane,gap:'3px'},
+       cells:Array.from({length:96},(_,i)=>({width:'2px',flexShrink:0,borderRadius:'99px',
+         height:Math.max(6,Math.abs(Math.sin(i*0.9)*30+Math.cos(i*0.31)*13))+'px',
+         background:'oklch(0.66 0.14 252)',opacity:.85}))}
+    ];
+
+    const faqData = [
+      ['Do I have to install something on my phone?',
+       "No. You plug it into your Mac with a cable and the Mac picks up the screen. The first time, your phone asks if it can trust the computer \u2014 tap yes and that's the setup done."],
+      ['Will it record the sound coming out of my phone?',
+       "If your phone passes audio down the cable, we'll grab it. If it doesn't, you've still got your microphone, which is what most people narrate over anyway."],
+      ['What about notifications and the bit at the top of the screen?',
+       "We film your phone from the outside, so whatever is on your screen goes into the video \u2014 timers, calls, now playing. You get a live preview before you hit record so you can spot anything and clear it first. There's a crop if you really need it."],
+      ['Can I move the camera bubble after recording?',
+       "Yes, that's the whole point. Move it, shrink it, make it a circle, hide it completely. The three recordings stay separate, so nothing about the layout is final until you export."],
+      ['Is there an Android version?',
+       "Not yet. iPhone first. Once that side is genuinely reliable, Android is next in line."],
+      ['Where do my recordings live?',
+       "In a folder on your Mac, next to a small project file. Nothing is uploaded anywhere, and there's no account to make."],
+      ['What will it cost?',
+       "Honestly, not decided yet. The waitlist hears first, and early people won't get a worse deal than anyone else."]
+    ];
+
+    return {
+      emailVal:s.email,
+      onEmail:e=>this.setState({email:e.target.value}),
+      onKey:e=>{ if(e.key==='Enter') this.join(); },
+      join:this.join, focusEmail:this.focusEmail,
+      joined:s.joined, notJoined:!s.joined,
+      countLine: s.joined ? "You're number "+(count+1)+" in the queue." : count+" people waiting \u00b7 one email, no spam",
+
+      bars, tracks,
+      phoneRows:[{n:'1',title:'Proverbs 3',sub:'4 min read'},{n:'2',title:'Psalm 27',sub:'3 min read'},{n:'3',title:'Reflection',sub:'Write a note'}],
+
+      facts:[
+        {n:'3', label:'sources, recorded at once'},
+        {n:'1', label:'clock keeping them in step'},
+        {n:'3', label:'shapes from the same take'},
+        {n:'0', label:'files sent to a server'}
+      ],
+
+      steps:[
+        {n:'01', title:'Plug in your phone', text:'ReelDock spots it over the cable and shows you the screen straight away.'},
+        {n:'02', title:'Press record', text:'Phone, camera and microphone all start together on one clock.'},
+        {n:'03', title:'Tidy it up', text:'Drag things where you want them, cut the dead air at the start.'},
+        {n:'04', title:'Export', text:'An MP4 on your desktop, in the shape you asked for.'}
+      ],
+
+      features:[
+        {title:'Your phone, over the cable', text:'No screen recorder on the phone, no mirroring app, no watermark. Plug it in and the Mac reads it directly.'},
+        {title:'You, if you want to be there', text:'Add your webcam as a circle or a soft rectangle, park it in a corner, or leave it out entirely.'},
+        {title:'Change your mind later', text:'Move the phone, resize the bubble, swap the background. The recording underneath never changes.'},
+        {title:'Cut the awkward start', text:'Trim the top and tail, or split out a bit in the middle where you fumbled. Undo is right there.'},
+        {title:'Backgrounds that suit you', text:'A plain colour, a quiet neutral, or an image of your own behind the phone.'},
+        {title:'Stays on your Mac', text:'Recordings sit in a normal folder. Nothing is uploaded, nothing is rendered in someone else\u2019s cloud.'}
+      ],
+
+      thumbStyle:{position:'absolute',top:'3px',bottom:'3px',borderRadius:'7px',
+        background:'linear-gradient(180deg,#403c37,#33302b)',border:'1px solid #4a453e',
+        boxShadow:'inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3)',
+        transition:'left .26s cubic-bezier(.32,.72,0,1)',
+        width:'calc((100% - 6px) / 3)', left:'calc(3px + (100% - 6px) * '+s.ratio+' / 3)'},
+      ratioTabs:RAT.map((r,i)=>({label:r.label, go:()=>this.setState({ratio:i}),
+        style:{position:'relative',flex:1,padding:'7px 0',borderRadius:'7px',fontSize:'12px',fontWeight:600,cursor:'pointer',
+          background:'transparent',border:'none',transition:'color .2s ease',color:s.ratio===i?'#f2efea':'#8d8880'}})),
+      ratioFrames,
+
+      notYet:['A full timeline editor','Transitions and effects','Automatic zooms','AI captions','Cloud rendering','Team libraries',
+        'A template store','Cursor effects','A teleprompter','Windows','Android, for now','Recording your Mac screen'],
+
+      needs:[
+        {tag:'Required', title:'A Mac', text:'Anything reasonably recent running a current version of macOS. Apple silicon is happiest.'},
+        {tag:'Required', title:'An iPhone and a cable', text:"The cable you already charge with. You'll tap 'Trust' once and never think about it again."},
+        {tag:'Optional', title:'A camera and a mic', text:'The built-in ones are fine. Plug in something nicer if you have it.'}
+      ],
+
+      faqs:faqData.map(([q,a],i)=>({
+        q, a, open:s.faq===i, sign:s.faq===i?'\u2212':'+', go:()=>this.setState({faq:s.faq===i?-1:i}),
+        rowStyle:{borderBottom:i===faqData.length-1?'none':'1px solid #2e2b27'},
+        signStyle:{display:'flex',alignItems:'center',justifyContent:'center',width:'26px',height:'26px',borderRadius:'8px',
+          background:s.faq===i?'linear-gradient(180deg,#403c37,#33302b)':'#1a1817',
+          border:'1px solid '+(s.faq===i?'#4a453e':'#302d29'),fontSize:'14px',color:'#a6a19a',flexShrink:0}
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ import {
   ChoiceCard,
   FieldRow,
   HelpBadge,
+  LinkButton,
   PathField,
   RecordingPill,
   SelectButton,
@@ -16,6 +17,7 @@ import {
   TextField,
   type Rect,
 } from "@reeldock/ui";
+import { CANVAS_BACKGROUNDS } from "@reeldock/shared";
 import { PageHeader } from "@/components/page-header";
 import { Specimen, Stack, Wrap } from "@/components/kit";
 
@@ -33,8 +35,6 @@ const LAYOUTS: { label: string; phone: Rect; camera: Rect }[] = [
     camera: { x: 40, y: 24, w: 52, h: 52, radius: 3 },
   },
 ];
-
-const SWATCHES = ["#F4F2EC", "#E8E2D6", "#1C1B19", "#2F4C46", "#C4D4E0"];
 
 function SelectionPage() {
   return (
@@ -112,6 +112,7 @@ function SelectionPage() {
               <SelectButton>FaceTime HD Camera</SelectButton>
             </FieldRow>
             <PathField action={<Button size="mini">Choose</Button>} value="~/Movies/ReelDock" />
+            <LinkButton>Open project folder</LinkButton>
             <TextField
               defaultValue="elorah-reading-plan"
               placeholder="Project name"
@@ -143,10 +144,11 @@ function SelectionDemo() {
         ))}
       </div>
       <div className="mt-4 flex gap-[9px]">
-        {SWATCHES.map((color, index) => (
+        {CANVAS_BACKGROUNDS.map((background, index) => (
           <Swatch
-            color={color}
-            key={color}
+            color={background.value}
+            key={background.id}
+            label={background.label}
             onSelect={() => setSwatch(index)}
             selected={swatch === index}
           />

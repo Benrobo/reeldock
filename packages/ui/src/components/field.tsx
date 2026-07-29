@@ -4,6 +4,8 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
 } from "react";
+import { Icon } from "@benrobo/iconary/react";
+import { ArrowDown01Icon } from "@benrobo/iconary/core/duotone-rounded";
 import { cn } from "../utils/cn";
 
 type FieldRowProps = {
@@ -41,7 +43,7 @@ export function SelectButton({
       {...props}
     >
       {children}
-      <span className="text-fg-3 text-[10px]">&#9662;</span>
+      <Icon color="currentColor" icon={ArrowDown01Icon} size={13} />
     </button>
   );
 }
@@ -50,7 +52,6 @@ type ValueChipProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
 };
 
-/** Flat value display for settings rows — reads as a value, not as an action. */
 export function ValueChip({ children, className, type = "button", ...props }: ValueChipProps) {
   return (
     <button
@@ -62,7 +63,7 @@ export function ValueChip({ children, className, type = "button", ...props }: Va
       {...props}
     >
       {children}
-      <span className="text-fg-hint text-[10px]">&#9662;</span>
+      <Icon color="currentColor" icon={ArrowDown01Icon} size={13} />
     </button>
   );
 }
@@ -73,8 +74,6 @@ type PathFieldProps = {
   className?: string;
 };
 
-/* Wells invert the recipe: a darker fill and an inset shadow instead of a
-   gradient and a drop shadow. */
 export function PathField({ value, action, className }: PathFieldProps) {
   return (
     <div
@@ -94,7 +93,6 @@ type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
   containerClassName?: string;
 };
 
-/** Focus adds a 3px ring at 22% accent on top of the well's inset shadow. */
 export function TextField({ trailing, containerClassName, className, ...props }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
 

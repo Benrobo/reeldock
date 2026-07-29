@@ -14,7 +14,6 @@ type LayoutPreviewProps = {
   className?: string;
 };
 
-/** Wireframe of a canvas layout: the phone plate and the camera bubble, in %. */
 export function LayoutPreview({ phone, camera, className }: LayoutPreviewProps) {
   return (
     <span
@@ -55,7 +54,6 @@ type ChoiceCardProps = {
   className?: string;
 };
 
-/* Selected = accent border plus an 18% to 7% gradient wash. */
 export function ChoiceCard({
   label,
   phone,
@@ -91,8 +89,6 @@ type SwatchProps = {
   className?: string;
 };
 
-/* Swatch selection is a double ring, never a border swap — the fill has to stay
-   readable against every canvas colour. */
 export function Swatch({ color, selected = false, onSelect, label, className }: SwatchProps) {
   return (
     <button

@@ -17,15 +17,14 @@
     "tauri:build": "turbo run tauri:build --filter=@reeldock/desktop",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "clean": "turbo run clean",
     "skills:install": "bash scripts/install-skills.sh",
     "dev:ui-preview": "turbo run dev --filter=@reeldock/ui-preview"
   },
   "devDependencies": {
-    "prettier": "^3.4.2",
-    "prettier-plugin-tailwindcss": "^0.6.11",
+    "@biomejs/biome": "^2.5.6",
     "turbo": "^2.5.0",
     "typescript": "^5.7.2"
   }

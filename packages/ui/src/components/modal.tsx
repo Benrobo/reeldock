@@ -24,7 +24,7 @@ export function Modal({
 
   return (
     <div
-      className="bg-scrim absolute inset-0 flex items-center justify-center"
+      className="bg-scrim z-999 absolute inset-0 flex items-center justify-center"
       onClick={onDismiss}
       role="presentation"
     >

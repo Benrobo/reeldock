@@ -7,6 +7,7 @@ import {
   SmartPhone01Icon,
 } from "@benrobo/iconary/core/duotone-rounded";
 import {
+  ActivitySpinner,
   Banner,
   Button,
   Checklist,
@@ -62,6 +63,13 @@ function SurfacesPage() {
             <Banner action={<Button size="mini">Look again</Button>} tone="warn">
               No iPhone found.
             </Banner>
+            <SurfaceRow>
+              <div className="flex-1">
+                <div className="text-[12.5px] font-semibold">Rendering export</div>
+                <div className="text-fg-3 mt-px text-[11.5px]">Button loaders use bars</div>
+              </div>
+              <ActivitySpinner size={18} />
+            </SurfaceRow>
             <Well>Recessed well — for read-only detail and checklists.</Well>
           </Stack>
         </Specimen>

@@ -15,6 +15,7 @@
     "@benrobo/iconary": "^0.2.0",
     "@reeldock/shared": "workspace:*",
     "@reeldock/tailwind-config": "workspace:*",
+    "@reeldock/ui": "workspace:*",
     "next": "^16.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -3,16 +3,6 @@
 @source "../../apps/**/*.{ts,tsx}";
 @source "../../packages/**/*.{ts,tsx}";
 
-/*
-  Ported 1:1 from docs/ReelDock design specification. Every value below is
-  verbatim from that spec — do not re-tune them.
-
-  The recipe: a 1px border, a top-to-bottom gradient of about 8% lightness, a
-  hairline highlight along the top edge, and a 1-2px drop shadow. Raised things
-  gradient down and cast a shadow; recessed things (tracks, wells, fields)
-  invert both.
-*/
-
 @theme {
   --color-canvas: #131211;
 
@@ -101,6 +91,9 @@
   --color-preview-phone: #6d675f;
   --color-preview-camera: #4b4640;
 
+  --color-hatch-a: #252220;
+  --color-hatch-b: #201e1c;
+
   --color-tool-disabled: #26231f;
   --color-tool-disabled-fg: #565049;
 
@@ -131,6 +124,34 @@
   --color-code: #191715;
   --color-code-line: #2f2b27;
   --color-code-fg: #b5b0a8;
+
+  --color-device-bezel: #0b0b0d;
+  --color-camera-a: #d3cdc2;
+  --color-camera-b: #c9c2b6;
+  --color-camera-mini: #b9b2a6;
+  --color-placeholder-fg: #6f6a60;
+
+  --color-screen: #fbfaf7;
+  --color-screen-ink: #1b1a18;
+  --color-screen-ink-2: #8d877c;
+  --color-screen-line: #eae5dc;
+  --color-screen-track: #e7e3da;
+  --color-screen-accent: #2f6b4f;
+  --color-screen-accent-soft: #edf1ee;
+  --color-screen-control: #d8d2c7;
+  --color-screen-tab-icon: #ddd8cd;
+
+  --color-promo-canvas: #e9eadf;
+  --color-promo-grid: rgb(246 240 229 / 0.08);
+  --color-promo-phone: #141a1f;
+  --color-promo-notch: #050706;
+  --color-promo-lens-core: #8caed5;
+  --color-promo-lens-rim: #2d4049;
+  --color-promo-lens-fg: #f7f2e8;
+  --color-promo-face: #dcb28b;
+  --color-promo-shadow: rgb(15 23 20 / 0.28);
+  --color-promo-shadow-soft: rgb(15 23 20 / 0.22);
+  --color-promo-shadow-faint: rgb(15 23 20 / 0.16);
 
   --color-fg: #f2efea;
   --color-fg-value: #e7e3dd;
@@ -178,6 +199,9 @@
   --shadow-record-dot: 0 0 0 3px rgb(255 255 255 / 0.18);
   --shadow-popover:
     0 18px 44px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-stage: 0 24px 60px rgb(0 0 0 / 0.45);
+  --shadow-device: 0 20px 44px rgb(0 0 0 / 0.26);
+  --shadow-bubble: 0 12px 28px rgb(0 0 0 / 0.18);
   --shadow-modal: 0 40px 90px rgb(0 0 0 / 0.6);
   --shadow-window: 0 40px 90px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(255 255 255 / 0.06);
   --shadow-press: inset 0 1px 3px rgb(0 0 0 / 0.22);
@@ -218,11 +242,31 @@
       opacity: 0.35;
     }
   }
+
+  @keyframes rd-bar-fade {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.12;
+    }
+  }
 }
 
-/* Diagonal hatch used behind drop targets and empty media slots. */
 @utility bg-hatch {
-  background: repeating-linear-gradient(135deg, #252220 0 8px, #201e1c 8px 16px);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-hatch-a) 0 8px,
+    var(--color-hatch-b) 8px 16px
+  );
+}
+
+@utility bg-camera-hatch {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-camera-a) 0 7px,
+    var(--color-camera-b) 7px 14px
+  );
 }
 
 @layer base {
@@ -276,17 +320,6 @@
   }
 }
 
-/*
-  The press feel is one shared recipe: the surface sinks, darkens, and takes an
-  inset shadow, so the light travels down with it. Applied by every pressable
-  primitive in @reeldock/ui.
-
-  Both directions use the same decelerating curve — no overshoot. A springy
-  curve here reads as a wobble on release, because the button rebounds past its
-  resting size while the text is still settling. Shadow is transitioned
-  alongside transform so the raised shadow fades into the inset one instead of
-  snapping, and the scale stays shallow enough not to shimmer type.
-*/
 .rd-press {
   transition:
     transform 0.2s var(--ease-glide),

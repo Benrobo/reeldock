@@ -1,245 +1,658 @@
+"use client";
+
+import { useMemo, useState, type CSSProperties } from "react";
+import type { IconData } from "@benrobo/iconary/core";
 import { Icon } from "@benrobo/iconary/react";
 import {
   AppleIcon,
-  ArrowRight01Icon,
   CameraVideoIcon,
   CheckmarkCircle02Icon,
   Clock03Icon,
-  FolderExportIcon,
   Mic01Icon,
+  PlayIcon,
+  Plug01Icon,
+  QuestionIcon,
   RecordIcon,
-  Scissor01Icon,
   SmartPhone01Icon,
   Video01Icon,
 } from "@benrobo/iconary/core/duotone-rounded";
-import { ASPECT_RATIOS, LAYOUT_PRESETS } from "@reeldock/shared";
+import {
+  Button,
+  Panel,
+  PanelLabel,
+  Segmented,
+  TextField,
+  Timecode,
+  TransportButton,
+} from "@reeldock/ui";
+import {
+  aspectRatios,
+  facts,
+  faqs,
+  features,
+  needs,
+  notYet,
+  phoneRows,
+  steps,
+} from "./landing-data";
 
-const proofPoints = [
-  "Separate phone, webcam, and microphone tracks",
-  "Layout-first editor for app demos",
-  "Local MP4 export for launch assets",
-] as const;
-
-const workflow = [
+const sourceTracks = [
   {
     icon: SmartPhone01Icon,
-    title: "Connect the phone",
-    body: "Record the live app directly from a USB-connected iPhone on your Mac.",
+    label: "Phone",
+    file: "phone.mov",
+    cells: Array.from({ length: 20 }, (_, index) => ({
+      className: "h-[34px] w-4 rounded-[3px] bg-screen-track",
+      opacity: 0.45 + ((index * 7) % 5) / 12,
+    })),
   },
   {
     icon: CameraVideoIcon,
-    title: "Capture the presenter",
-    body: "Add webcam and narration without baking them into the phone recording.",
+    label: "Camera",
+    file: "webcam.mov",
+    cells: Array.from({ length: 20 }, (_, index) => ({
+      className: "size-[30px] rounded-full border border-control-line bg-control-line",
+      opacity: 0.6 + ((index * 3) % 5) / 12,
+    })),
   },
   {
-    icon: Scissor01Icon,
-    title: "Frame the story",
-    body: "Trim, resize, reposition, and swap canvas ratios after the walkthrough.",
-  },
-  {
-    icon: FolderExportIcon,
-    title: "Export the demo",
-    body: "Render a polished H.264 MP4 for landing pages, social clips, or support.",
+    icon: Mic01Icon,
+    label: "Microphone",
+    file: "microphone.m4a",
+    cells: Array.from({ length: 72 }, (_, index) => ({
+      className: "w-0.5 rounded-full bg-accent",
+      height: `${Math.max(6, Math.abs(Math.sin(index * 0.9) * 30 + Math.cos(index * 0.31) * 13))}px`,
+      opacity: 0.85,
+    })),
   },
 ] as const;
 
+const timelineBars = Array.from({ length: 46 }, (_, index) => ({
+  className:
+    index >= 34 && index <= 39 ? "bg-raised-alt-top" : index < 12 ? "bg-accent" : "bg-thumb-line",
+  height: `${28 + Math.sin(index * 1.7) * 9 + Math.cos(index * 0.8) * 5}%`,
+}));
+
+const ratioOptions = aspectRatios.map((ratio) => ratio.id);
+
 export default function MarketingPage() {
+  const [email, setEmail] = useState("");
+  const [joined, setJoined] = useState(false);
+  const [ratioId, setRatioId] = useState<string>(aspectRatios[0].id);
+  const [openFaq, setOpenFaq] = useState(0);
+  const activeRatio = useMemo(
+    () => aspectRatios.find((ratio) => ratio.id === ratioId) ?? aspectRatios[0],
+    [ratioId]
+  );
+
+  function joinWaitlist() {
+    if (/.+@.+\..+/.test(email)) {
+      setJoined(true);
+    }
+  }
+
+  function focusWaitlist() {
+    const input = document.getElementById("waitlist-email");
+    input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    input?.focus({ preventScroll: true });
+  }
+
   return (
-    <main className="bg-canvas text-fg overflow-hidden">
-      <section className="min-h-screen bg-[radial-gradient(circle_at_72%_16%,color-mix(in_oklab,var(--color-accent)_18%,transparent),transparent_34%),linear-gradient(140deg,#1b1917_0%,#24221f_48%,#131211_100%)] px-[clamp(18px,4vw,64px)] pb-[70px] pt-[22px]">
-        <nav
-          className="mx-auto flex max-w-[1180px] items-center justify-between gap-6 pb-8 pt-2.5 lg:pb-[54px]"
-          aria-label="Main"
-        >
-          <a className="inline-flex items-center gap-2.5 text-lg font-black" href="#top">
-            <span className="bg-linear-to-b from-bright-top to-bright-bottom text-on-bright shadow-bright grid size-9 place-items-center rounded-md">
-              <Icon icon={RecordIcon} size={20} color="currentColor" />
+    <main className="bg-canvas text-fg min-h-screen overflow-hidden">
+      <nav className="border-titlebar-line bg-canvas/85 sticky top-0 z-30 border-b backdrop-blur-xl">
+        <div className="mx-auto flex h-[60px] max-w-[1160px] items-center gap-7 px-[clamp(18px,4vw,28px)]">
+          <a className="text-fg hover:text-fg inline-flex items-center gap-[9px]" href="#top">
+            <span className="bg-linear-to-b from-accent-top to-accent-bottom text-fg shadow-accent grid size-[25px] place-items-center rounded-[7px]">
+              <Icon icon={RecordIcon} size={16} color="currentColor" />
             </span>
-            ReelDock
+            <span className="text-[15.5px] font-semibold">ReelDock</span>
           </a>
-          <div className="text-fg-2 hidden items-center gap-6 text-sm font-bold md:inline-flex">
-            <a href="#workflow">Workflow</a>
-            <a href="#formats">Formats</a>
-            <a href="#mvp">MVP</a>
+          <div className="text-fg-2 hidden flex-1 items-center justify-end gap-6 text-[13.5px] md:flex">
+            <a className="text-fg-2 hover:text-accent-link-hover" href="#how">
+              How it works
+            </a>
+            <a className="text-fg-2 hover:text-accent-link-hover" href="#sources">
+              Sources
+            </a>
+            <a className="text-fg-2 hover:text-accent-link-hover" href="#formats">
+              Formats
+            </a>
+            <a className="text-fg-2 hover:text-accent-link-hover" href="#faq">
+              Questions
+            </a>
           </div>
-        </nav>
-
-        <div
-          className="mx-auto grid max-w-[1180px] items-center gap-8 lg:grid-cols-[minmax(0,0.93fr)_minmax(420px,1.07fr)] lg:gap-[78px]"
-          id="top"
-        >
-          <div className="grid gap-6">
-            <p className="text-accent inline-flex w-fit items-center gap-2 text-xs font-black uppercase">
-              <Icon icon={AppleIcon} size={16} color="currentColor" />
-              macOS recording studio for mobile apps
-            </p>
-            <h1 className="max-w-[760px] text-6xl font-bold leading-[0.9] sm:text-7xl lg:text-8xl">
-              Record your app. Frame your story.
-            </h1>
-            <p className="text-fg-2 max-w-[620px] text-lg leading-relaxed sm:text-xl">
-              ReelDock helps founders and mobile teams capture phone, camera, and voice in one
-              session, then turn the walkthrough into a polished launch-ready demo.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-1">
-              <a
-                className="bg-linear-to-b from-bright-top to-bright-bottom text-on-bright shadow-bright inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-md px-[18px] font-black sm:w-auto"
-                href="#mvp"
-              >
-                Follow the MVP
-                <Icon icon={ArrowRight01Icon} size={18} color="currentColor" />
-              </a>
-              <a
-                className="border-raised-line bg-surface text-fg inline-flex min-h-12 w-full items-center justify-center rounded-md border px-[18px] font-black sm:w-auto"
-                href="#workflow"
-              >
-                See workflow
-              </a>
-            </div>
-            <div className="grid gap-2.5 sm:flex sm:flex-wrap" aria-label="Product proof points">
-              {proofPoints.map((point) => (
-                <div
-                  className="border-raised-line bg-surface text-fg-2 inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-[13px] font-extrabold"
-                  key={point}
-                >
-                  <Icon icon={CheckmarkCircle02Icon} size={18} color="currentColor" />
-                  {point}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className="border-raised-line from-raised-top to-raised-bottom -mx-2 rounded-xl border bg-gradient-to-b shadow-[0_34px_80px_rgba(0,0,0,0.36)] sm:mx-0"
-            aria-label="ReelDock recording preview"
+          <Button
+            className="ml-auto hidden md:inline-flex"
+            onClick={focusWaitlist}
+            size="md"
+            variant="accent"
           >
-            <div className="border-surface-line flex min-h-[46px] items-center gap-2 border-b px-4">
-              <span className="bg-traffic-close size-2.5 rounded-full" />
-              <span className="bg-traffic-minimize size-2.5 rounded-full" />
-              <span className="bg-traffic-zoom size-2.5 rounded-full" />
-              <strong className="text-fg-2 ml-2 text-xs">Elorah Demo.reeldock</strong>
-            </div>
-            <div className="border-surface-line relative m-4 min-h-[380px] rounded-lg border bg-[linear-gradient(90deg,rgba(246,240,229,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(246,240,229,0.08)_1px,transparent_1px),#e9eadf] bg-[size:34px_34px] lg:min-h-[430px]">
-              <div className="absolute left-7 top-9 grid h-[262px] w-[138px] rounded-[34px] bg-[#141a1f] p-3 shadow-[0_26px_45px_rgba(15,23,20,0.28)] sm:left-[58px] sm:h-[326px] sm:w-[172px]">
-                <div className="absolute left-1/2 top-[15px] h-4 w-[58px] -translate-x-1/2 rounded-full bg-[#050706]" />
-                <div className="grid gap-3.5 rounded-[24px] bg-gradient-to-b from-[#FBFAF7] to-[#eae5dc] px-4 pb-[18px] pt-[42px]">
-                  <div className="h-3 w-[70%] rounded-full bg-[#1b1a18]" />
-                  <div className="h-24 rounded-[18px] bg-gradient-to-br from-[#2F6B4F] to-[#EDF1EE]" />
-                  <div className="grid gap-2">
-                    <span className="h-[9px] rounded-full bg-[#8d877c]/60" />
-                    <span className="h-[9px] w-[82%] rounded-full bg-[#8d877c]/60" />
-                    <span className="h-[9px] w-[58%] rounded-full bg-[#8d877c]/60" />
+            Join the waitlist
+          </Button>
+        </div>
+      </nav>
+
+      <section
+        className="mx-auto max-w-[1160px] px-[clamp(18px,4vw,28px)] pt-[72px] text-center"
+        id="top"
+      >
+        <div className="border-surface-line bg-surface shadow-panel text-fg-2 inline-flex items-center gap-2 rounded-full border px-3 py-[5px] text-xs">
+          <span className="bg-accent shadow-record-dot block size-1.5 rounded-full" />
+          macOS - in development - iPhone first
+        </div>
+        <h1 className="mx-auto mt-6 max-w-[820px] text-balance text-[clamp(44px,5.6vw,72px)] font-semibold leading-[1.02] tracking-normal">
+          Record your app.
+          <br />
+          Frame your story.
+        </h1>
+        <p className="text-fg-2 mx-auto mt-[22px] max-w-[600px] text-pretty text-lg leading-[1.55]">
+          Plug your iPhone into your Mac, press record, and walk through your app. ReelDock captures
+          the phone, your face, and your voice at once, then gives you one small editor to put them
+          together.
+        </p>
+        <WaitlistForm
+          email={email}
+          inputId="waitlist-email"
+          joined={joined}
+          onEmailChange={setEmail}
+          onSubmit={joinWaitlist}
+        />
+      </section>
+
+      <section className="mx-auto max-w-[1160px] px-[clamp(18px,4vw,28px)] pt-14">
+        <ProductWindow />
+        <div className="mt-3.5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          {facts.map((fact) => (
+            <Panel className="p-[18px_20px_19px]" key={fact.label}>
+              <div className="text-3xl font-semibold leading-none">{fact.value}</div>
+              <div className="text-fg-2 mt-2 text-[13px] leading-[1.4]">{fact.label}</div>
+            </Panel>
+          ))}
+        </div>
+      </section>
+
+      <LandingSection
+        eyebrow="How it works"
+        icon={Video01Icon}
+        id="how"
+        title="Making one demo video should not take a whole afternoon"
+        body="Today it is a chain of small annoying jobs, and every one of them is a chance to get something wrong. ReelDock is four steps, and the last one is a file on your desktop."
+      >
+        <div className="grid gap-3.5 md:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step) => (
+            <Panel className="p-5" key={step.title}>
+              <span className="border-track-line bg-well shadow-well-soft font-ui-mono text-fg-2 inline-flex h-6 min-w-6 items-center justify-center rounded-[7px] border px-[7px] text-[11px] font-semibold">
+                {step.number}
+              </span>
+              <h3 className="mt-[15px] text-[16.5px] font-semibold leading-tight">{step.title}</h3>
+              <p className="text-fg-2 mt-[7px] text-pretty text-[13.5px] leading-[1.55]">
+                {step.text}
+              </p>
+            </Panel>
+          ))}
+        </div>
+      </LandingSection>
+
+      <LandingSection
+        eyebrow="Sources"
+        icon={Plug01Icon}
+        id="sources"
+        title="Three recordings, kept apart on purpose"
+        body="One clock, three files. Nothing is baked together while you record, so when you change your mind about the layout afterwards, you do not shoot it again."
+      >
+        <Panel className="p-5">
+          <div className="relative grid gap-2.5">
+            {sourceTracks.map((track) => (
+              <div
+                className="grid gap-3 md:grid-cols-[132px_1fr] md:items-center"
+                key={track.label}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon icon={track.icon} size={18} color="currentColor" />
+                  <div>
+                    <div className="text-[13.5px] font-semibold">{track.label}</div>
+                    <div className="font-ui-mono text-fg-3 mt-[3px] text-[11px]">{track.file}</div>
                   </div>
                 </div>
+                <div className="border-track-line bg-well shadow-track flex h-14 items-center gap-1 overflow-hidden rounded-[9px] border px-2.5">
+                  {track.cells.map((cell, index) => (
+                    <span
+                      className={`${cell.className} shrink-0`}
+                      key={index}
+                      style={{
+                        height: "height" in cell ? cell.height : undefined,
+                        opacity: cell.opacity,
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="absolute right-6 top-[62px] grid aspect-square w-[132px] place-items-center rounded-full border-[10px] border-[#e9eadf] bg-[radial-gradient(circle_at_48%_35%,#8caed5_0_12%,#2d4049_13%_100%)] font-black text-[#f7f2e8] shadow-[0_22px_38px_rgba(15,23,20,0.22)] sm:right-[52px] sm:top-[54px] sm:w-[216px]">
-                <div className="absolute size-[72px] -translate-y-4 rounded-full bg-[#dcb28b]" />
-                <span className="relative mb-[42px] self-end">Webcam</span>
+            ))}
+            <span className="bg-fg absolute bottom-[-4px] left-[38%] top-[-4px] hidden w-0.5 rounded-full md:block" />
+          </div>
+          <div className="border-divider text-fg-2 mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t pt-[17px] text-[13px]">
+            <span>Move the camera anywhere, any time.</span>
+            <span>Mute a source without touching the rest.</span>
+            <span>Re-export in a different shape tomorrow.</span>
+          </div>
+        </Panel>
+        <div className="mt-3.5 grid gap-3.5 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <Panel className="p-5" key={feature.title}>
+              <h3 className="text-base font-semibold">{feature.title}</h3>
+              <p className="text-fg-2 mt-[7px] text-pretty text-[13.5px] leading-[1.55]">
+                {feature.text}
+              </p>
+            </Panel>
+          ))}
+        </div>
+      </LandingSection>
+
+      <LandingSection
+        eyebrow="Formats"
+        icon={Clock03Icon}
+        id="formats"
+        title="One take, whatever shape you need"
+        body="Record once. Export wide for your site, tall for Reels, square for the feed."
+        action={
+          <Segmented
+            className="w-[230px]"
+            onChange={setRatioId}
+            options={ratioOptions}
+            value={ratioId}
+          />
+        }
+      >
+        <Panel className="grid min-h-[420px] place-items-center p-7 sm:p-11">
+          <div className="flex w-full flex-col items-center justify-center gap-8 lg:flex-row lg:gap-10">
+            {aspectRatios.map((ratio) => (
+              <RatioFrame active={ratio.id === activeRatio.id} key={ratio.id} ratio={ratio} />
+            ))}
+          </div>
+        </Panel>
+      </LandingSection>
+
+      <section className="mx-auto max-w-[1160px] px-[clamp(18px,4vw,28px)] pt-[92px]">
+        <div className="grid gap-3.5 lg:grid-cols-[1fr_1.15fr]">
+          <Panel className="p-[26px]">
+            <PanelLabel>Scope</PanelLabel>
+            <h2 className="mt-3.5 text-balance text-[26px] font-semibold leading-[1.15]">
+              Things it does not do, so nobody is disappointed
+            </h2>
+            <p className="text-fg-2 mt-3.5 text-pretty text-[14.5px] leading-[1.6]">
+              ReelDock does one job. It is not trying to be your video editor, and it will not
+              pretend to get around anything Apple does not allow.
+            </p>
+          </Panel>
+          <Panel className="grid content-center gap-x-6 p-[22px_26px] sm:grid-cols-2">
+            {notYet.map((item) => (
+              <div className="flex items-baseline gap-2.5 py-2" key={item}>
+                <span className="bg-disabled-fg relative top-[-4px] block h-[1.5px] w-2 shrink-0" />
+                <span className="text-fg-2 text-[13.5px] leading-[1.45]">{item}</span>
               </div>
-              <div className="text-on-bright absolute bottom-6 right-5 flex min-h-[54px] items-end gap-2 rounded-md bg-white/80 p-3 shadow-[0_18px_34px_rgba(15,23,20,0.16)] sm:bottom-12 sm:right-12">
-                <Icon icon={Mic01Icon} size={18} color="currentColor" />
-                <span className="bg-traffic-zoom h-[18px] w-2.5 rounded-full" />
-                <span className="bg-traffic-zoom h-8 w-2.5 rounded-full" />
-                <span className="bg-traffic-zoom h-[42px] w-2.5 rounded-full" />
-                <span className="bg-traffic-zoom h-6 w-2.5 rounded-full" />
+            ))}
+          </Panel>
+        </div>
+        <div className="mt-3.5 grid gap-3.5 md:grid-cols-3">
+          {needs.map((need) => (
+            <Panel className="p-5" key={need.title}>
+              <span className="border-track-line bg-well text-fg-3 inline-block rounded-full border px-[9px] py-[3px] text-[10.5px] font-semibold uppercase tracking-[0.1em]">
+                {need.tag}
+              </span>
+              <h3 className="mt-3.5 text-base font-semibold">{need.title}</h3>
+              <p className="text-fg-2 mt-[7px] text-pretty text-[13.5px] leading-[1.55]">
+                {need.text}
+              </p>
+            </Panel>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-[1160px] px-[clamp(18px,4vw,28px)] pt-[92px]" id="faq">
+        <SectionEyebrow icon={QuestionIcon}>Questions</SectionEyebrow>
+        <h2 className="mt-3 text-[clamp(30px,3.4vw,40px)] font-semibold leading-[1.08]">
+          Fair questions
+        </h2>
+        <Panel className="mt-[26px] overflow-hidden p-0">
+          {faqs.map((faq, index) => {
+            const open = openFaq === index;
+            return (
+              <div className="border-divider border-b last:border-b-0" key={faq.question}>
+                <button
+                  className="flex w-full cursor-pointer items-center gap-4 border-0 bg-transparent p-[18px_22px] text-left"
+                  onClick={() => setOpenFaq(open ? -1 : index)}
+                  type="button"
+                >
+                  <span className="flex-1 text-[15.5px] font-semibold leading-snug">
+                    {faq.question}
+                  </span>
+                  <span
+                    className={`grid size-[26px] shrink-0 place-items-center rounded-lg border text-sm ${open ? "border-thumb-line bg-linear-to-b from-thumb-top to-thumb-bottom text-fg-2 shadow-thumb" : "border-track-line bg-well text-fg-3"}`}
+                  >
+                    {open ? "-" : "+"}
+                  </span>
+                </button>
+                {open ? (
+                  <div className="text-fg-2 text-pretty px-[22px] pb-5 pr-[70px] text-[14.5px] leading-[1.6]">
+                    {faq.answer}
+                  </div>
+                ) : null}
               </div>
-            </div>
-            <div className="grid gap-2 px-4 pb-4">
-              <div className="text-fg-2 grid h-8 grid-cols-[24px_1fr] items-center gap-2.5">
-                <Icon icon={SmartPhone01Icon} size={16} color="currentColor" />
-                <span className="bg-traffic-zoom h-[18px] w-[78%] rounded-full" />
-              </div>
-              <div className="text-fg-2 grid h-8 grid-cols-[24px_1fr] items-center gap-2.5">
-                <Icon icon={CameraVideoIcon} size={16} color="currentColor" />
-                <span className="bg-accent h-[18px] w-[54%] rounded-full" />
-              </div>
-              <div className="text-fg-2 grid h-8 grid-cols-[24px_1fr] items-center gap-2.5">
-                <Icon icon={Mic01Icon} size={16} color="currentColor" />
-                <span className="bg-traffic-close h-[18px] w-[68%] rounded-full" />
-              </div>
+            );
+          })}
+        </Panel>
+      </section>
+
+      <section className="mx-auto max-w-[1160px] px-[clamp(18px,4vw,28px)] pt-[92px]">
+        <Panel className="p-[56px_40px_60px] text-center">
+          <span className="bg-linear-to-b from-accent-top to-accent-bottom text-fg shadow-accent mx-auto grid size-16 place-items-center rounded-2xl">
+            <Icon icon={AppleIcon} size={34} color="currentColor" />
+          </span>
+          <h2 className="mx-auto mt-5 max-w-[560px] text-balance text-[clamp(28px,3.2vw,38px)] font-semibold leading-[1.08]">
+            Be there when it opens
+          </h2>
+          <p className="text-fg-2 mx-auto mt-3.5 max-w-[440px] text-pretty text-base leading-[1.55]">
+            Leave your email and we will tell you the day you can download it. No newsletter, no
+            drip campaign, nothing else.
+          </p>
+          <WaitlistForm
+            email={email}
+            joined={joined}
+            onEmailChange={setEmail}
+            onSubmit={joinWaitlist}
+          />
+        </Panel>
+      </section>
+
+      <footer className="border-titlebar-line mx-auto mt-16 flex max-w-[1160px] flex-wrap items-center gap-5 border-t px-[clamp(18px,4vw,28px)] py-[22px_56px]">
+        <div className="inline-flex items-center gap-[9px]">
+          <span className="bg-linear-to-b from-accent-top to-accent-bottom text-fg shadow-accent grid size-5 place-items-center rounded-[6px]">
+            <Icon icon={RecordIcon} size={13} color="currentColor" />
+          </span>
+          <span className="text-[13.5px] font-semibold">ReelDock</span>
+        </div>
+        <span className="text-fg-3 text-[13px]">Record your app. Frame your story.</span>
+        <span className="font-ui-mono text-fg-3 ml-auto text-[11px]">
+          Made on a Mac, for Mac - 2026
+        </span>
+      </footer>
+    </main>
+  );
+}
+
+type WaitlistFormProps = {
+  email: string;
+  joined: boolean;
+  onEmailChange: (value: string) => void;
+  onSubmit: () => void;
+  inputId?: string;
+};
+
+function WaitlistForm({ email, inputId, joined, onEmailChange, onSubmit }: WaitlistFormProps) {
+  if (joined) {
+    return (
+      <div className="border-surface-line bg-surface shadow-panel mt-[30px] inline-flex items-center gap-2.5 rounded-[11px] border px-[18px] py-3">
+        <span className="bg-accent text-fg grid size-[19px] place-items-center rounded-full text-[11px]">
+          <Icon icon={CheckmarkCircle02Icon} size={16} color="currentColor" />
+        </span>
+        <span className="text-sm">You are on the list. One email, the day it is ready.</span>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="mx-auto mt-[30px] flex max-w-[430px] flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-center"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit();
+      }}
+    >
+      <TextField
+        className="text-sm"
+        containerClassName="sm:w-[262px]"
+        id={inputId}
+        onChange={(event) => onEmailChange(event.target.value)}
+        placeholder="you@yourstartup.com"
+        type="email"
+        value={email}
+      />
+      <Button className="min-h-[41px] whitespace-nowrap" type="submit" variant="bright">
+        Join the waitlist
+      </Button>
+    </form>
+  );
+}
+
+type LandingSectionProps = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  id: string;
+  icon: IconData;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+};
+
+function LandingSection({ eyebrow, title, body, id, icon, action, children }: LandingSectionProps) {
+  return (
+    <section className="mx-auto max-w-[1160px] px-[clamp(18px,4vw,28px)] pt-[92px]" id={id}>
+      <SectionEyebrow icon={icon}>{eyebrow}</SectionEyebrow>
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-10">
+        <h2 className="max-w-[560px] text-balance text-[clamp(30px,3.4vw,40px)] font-semibold leading-[1.08]">
+          {title}
+        </h2>
+        <div className="grid gap-4">
+          <p className="text-fg-2 max-w-[430px] text-pretty text-[15px] leading-[1.6]">{body}</p>
+          {action ? <div className="justify-self-start sm:justify-self-end">{action}</div> : null}
+        </div>
+      </div>
+      <div className="mt-[30px]">{children}</div>
+    </section>
+  );
+}
+
+function SectionEyebrow({ children, icon }: { children: React.ReactNode; icon: IconData }) {
+  return (
+    <div className="text-fg-3 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em]">
+      <Icon icon={icon} size={15} color="currentColor" />
+      {children}
+    </div>
+  );
+}
+
+function ProductWindow() {
+  return (
+    <div
+      className="border-surface-line bg-window shadow-window overflow-hidden rounded-2xl border"
+      aria-label="ReelDock editor preview"
+    >
+      <div className="border-titlebar-line bg-titlebar flex h-[34px] items-center border-b px-[13px]">
+        <div className="flex gap-[7px]">
+          <span className="bg-traffic-close block size-[11px] rounded-full" />
+          <span className="bg-traffic-minimize block size-[11px] rounded-full" />
+          <span className="bg-traffic-zoom block size-[11px] rounded-full" />
+        </div>
+        <div className="text-fg-3 flex-1 truncate text-center text-xs">Elorah - Reading Plan</div>
+        <div className="w-14" />
+      </div>
+
+      <div className="border-titlebar-line bg-track flex flex-wrap items-center gap-[11px] border-b px-3.5 py-[11px]">
+        <Button size="sm" variant="dark">
+          Projects
+        </Button>
+        <div className="text-[13px] font-semibold">Elorah - Reading Plan</div>
+        <div className="text-fg-3 text-[11.5px]">Saved</div>
+        <div className="hidden flex-1 md:block" />
+        <Segmented className="w-[168px]" options={ratioOptions} value="16:9" />
+        <Button size="md" variant="bright">
+          Export
+        </Button>
+      </div>
+
+      <div className="grid min-h-[428px] lg:grid-cols-[1fr_228px]">
+        <div className="bg-titlebar-line grid place-items-center p-[26px]">
+          <div className="bg-bright-bottom shadow-stage relative flex aspect-video w-full max-w-[660px] items-center justify-center rounded-[4px]">
+            <PhoneMockup />
+            <div className="border-bright-hover-top bg-camera-hatch shadow-bubble absolute bottom-[12%] right-[7%] grid aspect-square w-[20%] place-items-center rounded-full border-2">
+              <span className="font-ui-mono text-placeholder-fg text-[8px] uppercase tracking-[0.08em]">
+                Camera
+              </span>
             </div>
           </div>
         </div>
-      </section>
 
-      <section className="mx-auto max-w-[1180px] px-[clamp(18px,4vw,64px)] py-[90px]" id="workflow">
-        <div className="mb-8 grid gap-3.5">
-          <p className="text-accent inline-flex w-fit items-center gap-2 text-xs font-black uppercase">
-            <Icon icon={Video01Icon} size={16} color="currentColor" />
-            One session, separate sources
-          </p>
-          <h2 className="max-w-[760px] text-5xl font-bold leading-none lg:text-6xl">
-            Built for product demos, not full timeline editing.
-          </h2>
-        </div>
-        <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
-          {workflow.map((item) => (
-            <article
-              className="border-raised-line bg-surface text-accent grid min-h-[238px] gap-4 rounded-md border p-[22px]"
-              key={item.title}
-            >
-              <Icon icon={item.icon} size={28} color="currentColor" />
-              <h3 className="text-fg text-lg font-black leading-tight">{item.title}</h3>
-              <p className="text-fg-2 text-[15px] leading-relaxed">{item.body}</p>
-            </article>
+        <aside className="border-titlebar-line bg-track border-l p-[17px_16px]">
+          <PanelLabel>Layout</PanelLabel>
+          <div className="mt-3.5 grid grid-cols-2 gap-2">
+            <LayoutTile />
+            <LayoutTile selected />
+            <LayoutTile />
+            <LayoutTile />
+          </div>
+          <div className="bg-divider my-[17px] h-px" />
+          <PanelSlider label="Phone size" value="62%" />
+          <PanelSlider className="mt-[18px]" label="Background" swatches value="Bone" />
+        </aside>
+      </div>
+
+      <div className="border-titlebar-line bg-track flex h-[74px] items-center gap-3.5 border-t px-4">
+        <TransportButton aria-label="Play preview">
+          <Icon icon={PlayIcon} size={16} color="currentColor" />
+        </TransportButton>
+        <Timecode className="shrink-0">
+          00:18 <span className="text-fg-3">/ 01:04</span>
+        </Timecode>
+        <div className="border-track-line bg-well shadow-track relative flex h-[38px] flex-1 items-center gap-0.5 overflow-hidden rounded-lg border px-[5px]">
+          {timelineBars.map((bar, index) => (
+            <span
+              className={`${bar.className} flex-1 rounded-[1px]`}
+              key={index}
+              style={{ height: bar.height }}
+            />
           ))}
+          <span className="bg-fg shadow-hairline absolute bottom-0 left-[27%] top-0 w-0.5" />
         </div>
-      </section>
+      </div>
+    </div>
+  );
+}
 
-      <section
-        className="mx-auto grid max-w-[1180px] items-start gap-8 px-[clamp(18px,4vw,64px)] py-[90px] lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,0.8fr)]"
-        id="formats"
-      >
-        <div>
-          <p className="text-accent inline-flex w-fit items-center gap-2 text-xs font-black uppercase">
-            <Icon icon={Clock03Icon} size={16} color="currentColor" />
-            Fast from recording to publish
-          </p>
-          <h2 className="mt-3.5 max-w-[760px] text-5xl font-bold leading-none lg:text-6xl">
-            Export the same walkthrough for every launch surface.
-          </h2>
+function PhoneMockup() {
+  return (
+    <div className="bg-on-bright shadow-device relative aspect-[9/19.5] h-[84%] rounded-[18px] p-[3px]">
+      <div className="bg-screen relative flex size-full flex-col overflow-hidden rounded-[15px]">
+        <div className="bg-on-bright absolute left-1/2 top-1 z-10 h-[9px] w-[34%] -translate-x-1/2 rounded-md" />
+        <div className="px-3 pb-0 pt-4">
+          <div className="text-screen-ink-2 text-[5px] font-bold uppercase tracking-[0.12em]">
+            Day 12 of 30
+          </div>
+          <div className="text-screen-ink mt-1 text-[12.5px] font-semibold leading-[1.14]">
+            Wisdom for
+            <br />
+            the morning
+          </div>
+          <div className="bg-screen-track mt-2.5 h-[3px] overflow-hidden rounded-sm">
+            <span className="bg-screen-ink block h-full w-[40%]" />
+          </div>
+          <div className="text-screen-ink-2 mt-1 text-[4.5px]">12 of 30 days complete</div>
         </div>
-        <div className="grid gap-3">
-          {ASPECT_RATIOS.map((ratio) => (
+        <div className="flex flex-col gap-[5px] px-2.5 pt-3">
+          {phoneRows.map((row) => (
             <div
-              className="border-raised-line bg-surface grid min-h-[82px] grid-cols-1 items-center gap-1 rounded-md border p-[18px] sm:grid-cols-[92px_1fr_auto] sm:gap-4"
-              key={ratio.id}
+              className="border-screen-line bg-screen-accent-soft flex items-center gap-1.5 rounded-md border px-[7px] py-1.5"
+              key={row.title}
             >
-              <strong className="text-[28px]">{ratio.id}</strong>
-              <span className="text-accent font-black">{ratio.label}</span>
-              <small className="text-fg-2 font-extrabold">
-                {ratio.width} x {ratio.height}
-              </small>
+              <span className="bg-screen-track text-screen-ink-2 grid size-[11px] place-items-center rounded-[3px] text-[5px] font-bold">
+                {row.number}
+              </span>
+              <span className="flex-1">
+                <span className="text-screen-ink block text-[5.5px] font-semibold">
+                  {row.title}
+                </span>
+                <span className="text-screen-ink-2 block text-[4.5px]">{row.sub}</span>
+              </span>
+              <span className="border-screen-control block size-2 rounded-full border" />
             </div>
           ))}
         </div>
-      </section>
+      </div>
+    </div>
+  );
+}
 
-      <section
-        className="mx-auto mb-20 grid max-w-[1180px] gap-8 px-[clamp(18px,4vw,64px)] py-[90px] lg:grid-cols-[minmax(0,0.8fr)_minmax(360px,0.7fr)]"
-        id="mvp"
-      >
-        <div className="grid content-start gap-4">
-          <p className="text-accent inline-flex w-fit items-center gap-2 text-xs font-black uppercase">
-            <Icon icon={RecordIcon} size={16} color="currentColor" />
-            MVP definition
-          </p>
-          <h2 className="max-w-[760px] text-5xl font-bold leading-none lg:text-6xl">
-            First prove capture reliability. Then polish the editor.
-          </h2>
-          <p className="text-fg-2 max-w-[620px] text-lg leading-relaxed sm:text-xl">
-            The launch version stays focused: connected iPhone capture, webcam, microphone,
-            synchronized source files, layout presets, trim, and local MP4 export.
-          </p>
+function LayoutTile({ selected = false }: { selected?: boolean }) {
+  return (
+    <span
+      className={`block h-[46px] rounded-[9px] border ${selected ? "border-accent bg-linear-to-b from-thumb-top to-thumb-bottom shadow-control-lift" : "border-track-line bg-well"}`}
+    />
+  );
+}
+
+function PanelSlider({
+  className,
+  label,
+  swatches = false,
+  value,
+}: {
+  className?: string;
+  label: string;
+  swatches?: boolean;
+  value: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="text-fg-2 flex justify-between text-xs">
+        <span>{label}</span>
+        <span className="font-ui-mono text-fg text-[11px]">{value}</span>
+      </div>
+      {swatches ? (
+        <div className="mt-2.5 flex gap-2">
+          <span className="bg-bright-bottom shadow-swatch size-[26px] rounded-full" />
+          <span className="border-control-line bg-on-bright size-[26px] rounded-full border" />
+          <span className="border-control-line bg-promo-lens-rim size-[26px] rounded-full border" />
+          <span className="border-control-line bg-control-top size-[26px] rounded-full border" />
         </div>
-        <div className="grid content-start gap-2.5">
-          {LAYOUT_PRESETS.map((preset) => (
-            <div className="border-raised-line bg-surface rounded-md border p-4" key={preset.id}>
-              <span className="text-accent mb-1.5 block font-black">{preset.label}</span>
-              <p className="text-fg-2 text-[15px] leading-relaxed">{preset.description}</p>
-            </div>
-          ))}
+      ) : (
+        <div className="border-track-line bg-well shadow-track relative mt-2.5 h-1.5 rounded-[3px] border">
+          <span className="bg-linear-to-b from-accent-top to-accent-bottom absolute bottom-0 left-0 top-0 w-[62%] rounded-[3px]" />
+          <span className="border-bright-line bg-linear-to-b from-bright-top to-bright-bottom shadow-knob-sm absolute left-[62%] top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border" />
         </div>
-      </section>
-    </main>
+      )}
+    </div>
+  );
+}
+
+type Ratio = (typeof aspectRatios)[number];
+
+function RatioFrame({ active, ratio }: { active: boolean; ratio: Ratio }) {
+  const height = active ? ratio.height : ratio.height * 0.74;
+  const width = height * ratio.aspect;
+  const tall = ratio.aspect < 1;
+  const style = {
+    "--ratio-frame-height": `${height}px`,
+    "--ratio-frame-width": `${width}px`,
+  } as CSSProperties;
+
+  return (
+    <div
+      className={`transition-opacity duration-300 ${active ? "opacity-100" : "opacity-40"}`}
+      style={style}
+    >
+      <div className="ease-glide bg-bright-bottom shadow-stage relative flex h-[calc(var(--ratio-frame-height)*0.62)] w-[calc(var(--ratio-frame-width)*0.62)] items-center justify-center rounded-[5px] transition-[height,width] duration-300 sm:h-[var(--ratio-frame-height)] sm:w-[var(--ratio-frame-width)]">
+        <div
+          className={`bg-on-bright relative aspect-[9/19.5] rounded-[9px] transition-[height,transform] duration-300 ${tall ? "h-[62%] -translate-y-[13%]" : "h-[80%]"}`}
+        >
+          <span className="bg-control-top absolute left-1/2 top-[5%] h-[4.5%] w-[34%] -translate-x-1/2 rounded-full" />
+        </div>
+        <div
+          className={`border-bright-hover-top bg-camera-hatch absolute aspect-square rounded-full border-2 transition-all duration-300 ${tall ? "bottom-[8%] right-1/2 w-[26%] translate-x-1/2" : "bottom-[10%] right-[8%] w-[22%]"}`}
+        />
+      </div>
+      <div className="mt-3.5 text-center">
+        <div className="text-[13.5px] font-semibold">{ratio.id}</div>
+        <div className="text-fg-3 mt-[3px] text-xs">{ratio.use}</div>
+      </div>
+    </div>
   );
 }

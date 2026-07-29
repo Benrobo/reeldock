@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  html,body{margin:0;padding:0;background:#131211;-webkit-font-smoothing:antialiased;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,sans-serif;}
+  a{color:oklch(0.63 0.16 252);text-decoration:none;}
+  a:hover{color:oklch(0.72 0.14 252);}
+  button{font-family:inherit;-webkit-tap-highlight-color:transparent;transition:transform .26s cubic-bezier(.34,1.56,.64,1),filter .16s ease,background .18s ease,border-color .18s ease,color .18s ease;}
+  button:active{transform:scale(.962);filter:brightness(.95);box-shadow:inset 0 1px 3px rgba(0,0,0,.22)!important;transition-duration:.07s;transition-timing-function:ease-out;}
+  @keyframes rdmeter{0%{width:32%}22%{width:71%}44%{width:48%}66%{width:83%}88%{width:39%}100%{width:32%}}
+  @keyframes rdpulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes rdspin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:36px 36px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;background:#131211;">
+
+  <div style="width:1280px;display:flex;align-items:flex-end;justify-content:space-between;gap:32px;">
+    <div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#9a948c;">ReelDock &middot; MVP screens</div>
+      <div style="font-size:26px;font-weight:600;letter-spacing:-.022em;color:#f2efea;margin-top:7px;">Record your app. Frame your story.</div>
+      <div style="font-size:13.5px;color:#a6a19a;margin-top:6px;max-width:560px;text-wrap:pretty;">macOS desktop app. Click through the flow &mdash; the editor canvas, presets, trim and export are live.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px;align-items:flex-end;">
+      <div style="display:flex;gap:6px;">
+        <sc-for list="{{ flowChips }}" as="c" hint-placeholder-count="7">
+          <button onClick="{{ c.go }}" style="{{ c.style }}">{{ c.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8d8880;margin-right:2px;">States</span>
+        <sc-for list="{{ stateChips }}" as="c" hint-placeholder-count="5">
+          <button onClick="{{ c.go }}" style="{{ c.style }}">{{ c.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="width:1280px;border-radius:12px;overflow:hidden;background:#1e1c1a;box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);">
+    <div style="height:38px;background:#2a2724;border-bottom:1px solid #201e1c;display:flex;align-items:center;padding:0 14px;position:relative;">
+      <div style="display:flex;gap:8px;">
+        <div style="width:12px;height:12px;border-radius:50%;background:#ED6A5E;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:#F4BF4F;"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:#61C554;"></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;text-align:center;font-size:12.5px;font-weight:600;color:#a6a19a;letter-spacing:.01em;pointer-events:none;">{{ winTitle }}</div>
+    </div>
+
+    <div style="height:800px;position:relative;display:flex;background:#1e1c1a;color:#f2efea;">
+
+      <!-- ═══ PERMISSIONS ═══ -->
+      <sc-if value="{{ isPerm }}">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;">
+          <div style="width:520px;">
+            <div style="width:60px;height:60px;border-radius:16px;background:#2b2825;border:1px solid #37332e;display:flex;align-items:center;justify-content:center;">
+              <div style="width:20px;height:20px;border-radius:50%;background:oklch(0.62 0.18 26);"></div>
+            </div>
+            <div style="font-size:28px;font-weight:600;letter-spacing:-.024em;margin-top:26px;">Before you record</div>
+            <div style="font-size:14.5px;line-height:1.55;color:#a6a19a;margin-top:10px;text-wrap:pretty;">ReelDock records your iPhone, camera and microphone as separate files on this Mac. macOS asks for each one individually.</div>
+
+            <div style="margin-top:30px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                <div style="width:34px;height:34px;border-radius:10px;background:#332f2b;flex-shrink:0;"></div>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:600;">Camera</div>
+                  <div style="font-size:12.5px;color:#8d8880;margin-top:2px;">Records your face alongside the phone.</div>
+                </div>
+                <sc-if value="{{ permDenied }}">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:12px;font-weight:600;color:oklch(0.62 0.18 26);">Denied</span>
+                    <button onClick="{{ grantAll }}" style="padding:7px 13px;border-radius:8px;border:1px solid #46403a;background:#332f2b;color:#f2efea;font-size:12.5px;font-weight:600;cursor:pointer;">Open Settings</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ permPending }}">
+                  <button onClick="{{ grantAll }}" style="padding:7px 15px;border-radius:8px;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));border:1px solid oklch(0.48 0.14 252);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.4);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;">Allow</button>
+                </sc-if>
+                <sc-if value="{{ permGranted }}">
+                  <span style="font-size:12px;font-weight:600;color:oklch(0.68 0.14 155);">Allowed</span>
+                </sc-if>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                <div style="width:34px;height:34px;border-radius:10px;background:#332f2b;flex-shrink:0;"></div>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:600;">Microphone</div>
+                  <div style="font-size:12.5px;color:#8d8880;margin-top:2px;">Records narration to its own audio file.</div>
+                </div>
+                <sc-if value="{{ permGranted }}">
+                  <span style="font-size:12px;font-weight:600;color:oklch(0.68 0.14 155);">Allowed</span>
+                </sc-if>
+                <sc-if value="{{ notGranted }}">
+                  <button onClick="{{ grantAll }}" style="padding:7px 15px;border-radius:8px;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));border:1px solid oklch(0.48 0.14 252);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.4);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;">Allow</button>
+                </sc-if>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                <div style="width:34px;height:34px;border-radius:10px;background:#332f2b;flex-shrink:0;"></div>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:600;">Connected iPhone</div>
+                  <div style="font-size:12.5px;color:#8d8880;margin-top:2px;">Unlock the phone and tap Trust when asked.</div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:#8d8880;">On the phone</span>
+              </div>
+            </div>
+
+            <sc-if value="{{ permDenied }}">
+              <div style="margin-top:20px;padding:14px 16px;border-radius:12px;background:oklch(0.62 0.18 26 / 0.12);border:1px solid oklch(0.62 0.18 26 / 0.35);font-size:13px;line-height:1.5;color:#e7ded9;">Camera access was denied. Open <strong style="font-weight:600;">System Settings &rsaquo; Privacy &amp; Security &rsaquo; Camera</strong> and switch ReelDock on, then return here.</div>
+            </sc-if>
+
+            <div style="margin-top:26px;display:flex;gap:10px;align-items:center;">
+              <button onClick="{{ goHome }}" style="padding:11px 22px;border-radius:10px;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:13.5px;font-weight:600;cursor:pointer;">Continue</button>
+              <button onClick="{{ goHome }}" style="padding:11px 18px;border-radius:10px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;font-size:13.5px;font-weight:500;cursor:pointer;">Skip for now</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ═══ HOME ═══ -->
+      <sc-if value="{{ isHome }}">
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+          <div style="padding:44px 48px 0;display:flex;align-items:flex-end;justify-content:space-between;">
+            <div>
+              <div style="font-size:30px;font-weight:600;letter-spacing:-.026em;">ReelDock</div>
+              <div style="font-size:14px;color:#8d8880;margin-top:6px;">Connect your phone, record your app and camera together.</div>
+            </div>
+            <button onClick="{{ goSetup }}" style="padding:12px 22px;border-radius:10px;background:linear-gradient(180deg,oklch(0.66 0.18 26),oklch(0.56 0.19 26));border:1px solid oklch(0.46 0.16 26);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 1px 3px rgba(0,0,0,.4);color:#fff;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:9px;">
+              <span style="width:9px;height:9px;border-radius:50%;background:#fff;display:block;"></span>New recording
+            </button>
+          </div>
+
+          <div style="padding:28px 48px 0;display:flex;gap:14px;">
+            <div style="flex:1;padding:18px 20px;border-radius:12px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);display:flex;align-items:center;gap:14px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.68 0.14 155);"></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px;font-weight:600;">iPhone 15 Pro</div>
+                <div style="font-size:12px;color:#8d8880;margin-top:2px;">Connected over USB &middot; trusted</div>
+              </div>
+            </div>
+            <div style="flex:1;padding:18px 20px;border-radius:12px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);display:flex;align-items:center;gap:14px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.68 0.14 155);"></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px;font-weight:600;">FaceTime HD Camera</div>
+                <div style="font-size:12px;color:#8d8880;margin-top:2px;">Built-in &middot; 1080p</div>
+              </div>
+            </div>
+            <div style="flex:1;padding:18px 20px;border-radius:12px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);display:flex;align-items:center;gap:14px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.68 0.14 155);"></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px;font-weight:600;">Shure MV7</div>
+                <div style="font-size:12px;color:#8d8880;margin-top:2px;">USB microphone</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:34px 48px 0;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:#9a948c;">Recent projects</div>
+            <button onClick="{{ goEditor }}" style="background:none;border:none;color:#8d8880;font-size:12.5px;cursor:pointer;padding:0;">Open from Finder&hellip;</button>
+          </div>
+
+          <div style="padding:16px 48px 48px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+            <sc-for list="{{ recents }}" as="p" hint-placeholder-count="4">
+              <div onClick="{{ goEditor }}" style="cursor:pointer;">
+                <div style="aspect-ratio:16/9;border-radius:10px;border:1px solid #37332e;background:repeating-linear-gradient(135deg,#2b2825 0 8px,#26231f 8px 16px);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                  <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:9.5px;letter-spacing:.1em;color:#6b665f;text-transform:uppercase;">thumbnail</span>
+                  <span style="position:absolute;right:8px;bottom:8px;padding:3px 6px;border-radius:5px;background:rgba(0,0,0,.6);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;color:#e7e3dd;">{{ p.dur }}</span>
+                </div>
+                <div style="font-size:13px;font-weight:600;margin-top:10px;">{{ p.name }}</div>
+                <div style="font-size:11.5px;color:#9a948c;margin-top:3px;">{{ p.meta }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ═══ RECORDING SETUP ═══ -->
+      <sc-if value="{{ isSetup }}">
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+          <sc-if value="{{ bannerNoPhone }}">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;background:oklch(0.72 0.15 75 / 0.13);border-bottom:1px solid oklch(0.72 0.15 75 / 0.3);">
+              <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.72 0.15 75);"></span>
+              <span style="font-size:13px;color:#efe7dc;flex:1;">No iPhone found. Connect it with a cable, unlock it, and tap <strong style="font-weight:600;">Trust This Computer</strong>.</span>
+              <button onClick="{{ reconnect }}" style="padding:6px 12px;border-radius:7px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #4d473f;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.35);color:#f2efea;font-size:12px;font-weight:600;cursor:pointer;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;">Look again</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ bannerLowDisk }}">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;background:oklch(0.72 0.15 75 / 0.13);border-bottom:1px solid oklch(0.72 0.15 75 / 0.3);">
+              <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.72 0.15 75);"></span>
+              <span style="font-size:13px;color:#efe7dc;flex:1;">4.1&nbsp;GB left on Macintosh HD &mdash; about 6 minutes at this quality.</span>
+              <button onClick="{{ dismissBanner }}" style="padding:6px 12px;border-radius:7px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #4d473f;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.35);color:#f2efea;font-size:12px;font-weight:600;cursor:pointer;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;">Change location</button>
+            </div>
+          </sc-if>
+
+          <div ref="{{ stageRef }}" style="flex:1;display:flex;align-items:center;justify-content:center;padding:32px;min-height:0;">
+            <sc-if value="{{ phoneOn }}">
+              <div ref="{{ canvasRefP }}" style="position:relative;flex-shrink:0;overflow:hidden;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.45);width:{{ g.cw }}px;height:{{ g.ch }}px;background:{{ bg }};">
+                <div style="position:absolute;left:{{ g.phL }}px;top:{{ g.phT }}px;width:{{ g.phW }}px;height:{{ g.phH }}px;">
+                  <div style="position:absolute;inset:0;box-sizing:border-box;border-radius:{{ g.rOut }}px;padding:{{ g.bez }}px;background:{{ g.bezColor }};box-shadow:0 16px 34px rgba(0,0,0,.22);">
+                    <div style="position:relative;width:100%;height:100%;border-radius:{{ g.rIn }}px;overflow:hidden;background:#FBFAF7;">
+                      <div style="position:absolute;left:50%;top:50%;width:390px;height:844px;transform:translate(-50%,-50%) scale({{ g.k }});background:#FBFAF7;font-family:-apple-system,'Helvetica Neue',Helvetica,sans-serif;color:#1b1a18;">
+                        <div style="height:56px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;">
+                          <span style="font-size:15px;font-weight:600;">9:41</span>
+                          <span style="display:flex;gap:5px;align-items:center;"><span style="width:16px;height:10px;border-radius:2px;background:#1b1a18;display:block;"></span><span style="width:14px;height:10px;border-radius:2px;background:#1b1a18;display:block;"></span><span style="width:24px;height:11px;border-radius:3px;border:1.5px solid #1b1a18;display:block;"></span></span>
+                        </div>
+                        <div style="padding:16px 28px 0;">
+                          <div style="font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8d877c;">Day 12 of 30</div>
+                          <div style="font-size:34px;line-height:1.12;font-weight:600;letter-spacing:-.02em;margin-top:8px;">Wisdom for<br />the morning</div>
+                          <div style="margin-top:22px;height:8px;border-radius:4px;background:#e7e3da;overflow:hidden;"><div style="width:40%;height:100%;background:#2F6B4F;"></div></div>
+                          <div style="margin-top:10px;font-size:14px;color:#8d877c;">12 of 30 days complete</div>
+                          <div style="margin-top:26px;display:flex;flex-direction:column;gap:12px;">
+                            <sc-for list="{{ elorahRows }}" as="r" hint-placeholder-count="3">
+                              <div style="display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:1px solid #eae5dc;border-radius:16px;">
+                                <div style="width:38px;height:38px;border-radius:12px;background:#EDF1EE;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#2F6B4F;">{{ r.n }}</div>
+                                <div style="flex:1;"><div style="font-size:16px;font-weight:600;">{{ r.t }}</div><div style="font-size:13px;color:#8d877c;margin-top:2px;">{{ r.s }}</div></div>
+                                <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid #d8d2c7;"></div>
+                              </div>
+                            </sc-for>
+                          </div>
+                        </div>
+                        <div style="position:absolute;left:0;right:0;bottom:0;height:86px;border-top:1px solid #eae5dc;background:rgba(251,250,247,.95);display:flex;align-items:flex-start;padding-top:12px;">
+                          <sc-for list="{{ elorahTabs }}" as="t" hint-placeholder-count="4">
+                            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:22px;height:22px;border-radius:7px;background:#ddd8cd;"></div><div style="font-size:11px;color:#8d877c;">{{ t }}</div></div>
+                          </sc-for>
+                        </div>
+                      </div>
+                      <sc-if value="{{ frameOn }}">
+                        <div style="position:absolute;left:50%;transform:translateX(-50%);top:{{ g.islandT }}px;width:{{ g.islandW }}px;height:{{ g.islandH }}px;border-radius:99px;background:#0b0b0d;"></div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+                <sc-if value="{{ camOn }}">
+                  <div style="position:absolute;left:{{ g.camL }}px;top:{{ g.camT }}px;width:{{ g.camW }}px;height:{{ g.camH }}px;border-radius:{{ g.camR }}px;overflow:hidden;background:repeating-linear-gradient(135deg,#d3cdc2 0 7px,#c9c2b6 7px 14px);background-position:{{ g.camCrop }}% 50%;transform:{{ g.mirror }};display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(0,0,0,.18);">
+                    <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:9.5px;letter-spacing:.12em;color:#6f6a60;text-transform:uppercase;">camera</span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ phoneOff }}">
+              <div style="width:640px;height:360px;border-radius:10px;border:1px dashed #443f39;background:#24221f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+                <div style="width:46px;height:76px;border-radius:10px;border:1.5px solid #4a443c;"></div>
+                <div style="font-size:15px;font-weight:600;color:#c7c2ba;">No phone connected</div>
+                <div style="font-size:13px;color:#8d8880;max-width:280px;text-align:center;line-height:1.5;">Plug an iPhone into this Mac. It appears here within a few seconds.</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="height:84px;border-top:1px solid #2b2825;display:flex;align-items:center;padding:0 28px;gap:20px;background:#201e1c;">
+            <sc-if value="{{ phoneOn }}">
+              <button onClick="{{ startRec }}" style="display:flex;align-items:center;gap:11px;padding:13px 26px;border-radius:11px;background:linear-gradient(180deg,oklch(0.66 0.18 26),oklch(0.56 0.19 26));border:1px solid oklch(0.46 0.16 26);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 1px 3px rgba(0,0,0,.4);color:#fff;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;font-size:14px;font-weight:600;cursor:pointer;">
+                <span style="width:11px;height:11px;border-radius:50%;background:#fff;display:block;"></span>Record
+              </button>
+            </sc-if>
+            <sc-if value="{{ phoneOff }}">
+              <button style="display:flex;align-items:center;gap:11px;padding:13px 26px;border-radius:11px;background:#2a2724;border:1px solid #35312c;color:#5f5b55;font-size:14px;font-weight:600;cursor:not-allowed;">
+                <span style="width:11px;height:11px;border-radius:50%;background:#6b665f;display:block;"></span>Record
+              </button>
+            </sc-if>
+            <div style="font-size:12.5px;color:#8d8880;">{{ setupStatus }}</div>
+            <div style="flex:1;"></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9a948c;">Input</span>
+              <div style="width:150px;height:7px;border-radius:4px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,oklch(0.68 0.14 155),oklch(0.74 0.13 140));border-radius:3px;animation:rdmeter 2.4s ease-in-out infinite;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:320px;box-sizing:border-box;border-left:1px solid #2b2825;background:#201e1c;overflow-y:auto;padding:22px 20px 40px;display:flex;flex-direction:column;gap:26px;">
+          <div>
+            <div style="font-size:15px;font-weight:600;letter-spacing:-.01em;">Recording setup</div>
+            <div style="font-size:12.5px;color:#8d8880;margin-top:4px;line-height:1.5;">Each source is saved as its own file, so you can rearrange everything afterwards.</div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;margin-bottom:11px;">Sources</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                <span style="width:7px;height:7px;border-radius:50%;background:{{ phoneDotColor }};flex-shrink:0;"></span>
+                <div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;">Phone</div><div style="font-size:11.5px;color:#8d8880;margin-top:1px;">{{ phoneLabel }}</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.68 0.14 155);flex-shrink:0;"></span>
+                <div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;">Camera</div><div style="font-size:11.5px;color:#8d8880;margin-top:1px;">FaceTime HD Camera</div></div>
+                <button onClick="{{ toggleCam }}" style="position:relative;width:42px;height:25px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ camToggleBg }};"><span style="position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ camToggleKnob }};"></span></button>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.68 0.14 155);flex-shrink:0;"></span>
+                <div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;">Microphone</div><div style="font-size:11.5px;color:#8d8880;margin-top:1px;">Shure MV7</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;margin-bottom:11px;">Layout</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <sc-for list="{{ presetList }}" as="p" hint-placeholder-count="4">
+                <button onClick="{{ p.go }}" style="{{ p.style }}">
+                  <span style="display:block;position:relative;width:100%;aspect-ratio:16/9;border-radius:5px;background:#1b1917;box-shadow:inset 0 1px 3px rgba(0,0,0,.5);overflow:hidden;">
+                    <span style="position:absolute;background:#6d675f;border-radius:2px;left:{{ p.px }}%;top:{{ p.py }}%;width:{{ p.pw }}%;height:{{ p.ph }}%;display:block;"></span>
+                    <sc-if value="{{ p.hasCam }}">
+                      <span style="position:absolute;background:#4b4640;left:{{ p.cx }}%;top:{{ p.cy }}%;width:{{ p.cw }}%;height:{{ p.ch }}%;border-radius:{{ p.cr }}px;display:block;"></span>
+                    </sc-if>
+                  </span>
+                  <span style="display:block;font-size:11.5px;font-weight:600;margin-top:7px;text-align:left;">{{ p.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;margin-bottom:11px;">Canvas</div>
+            <div style="position:relative;display:flex;padding:3px;border-radius:10px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 4);left:calc(3px + (100% - 6px) * {{ ratioI }} / 4);"></div>
+              <sc-for list="{{ ratioList }}" as="r" hint-placeholder-count="3">
+                <button onClick="{{ r.go }}" style="{{ r.style }}">{{ r.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
+              <span style="font-size:12.5px;color:#a6a19a;">Quality</span>
+              <span style="font-size:12.5px;font-weight:600;">High &middot; 60 fps</span>
+            </div>
+          </div>
+
+          <div style="padding:14px 15px;border-radius:11px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:9px;">Before you start</div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <sc-for list="{{ checklist }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;gap:9px;align-items:flex-start;">
+                  <span style="width:5px;height:5px;border-radius:50%;background:#5c5852;margin-top:6px;flex-shrink:0;"></span>
+                  <span style="font-size:12px;color:#a6a19a;line-height:1.45;">{{ c }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ═══ RECORDING ═══ -->
+      <sc-if value="{{ isRec }}">
+        <div style="flex:1;display:flex;flex-direction:column;background:#151412;min-width:0;">
+          <div style="height:56px;display:flex;align-items:center;padding:0 24px;gap:18px;border-bottom:1px solid #262320;">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 13px;border-radius:9px;background:oklch(0.62 0.18 26 / 0.16);border:1px solid oklch(0.62 0.18 26 / 0.4);">
+              <span style="width:9px;height:9px;border-radius:50%;background:oklch(0.62 0.18 26);animation:rdpulse 1.6s ease-in-out infinite;display:block;"></span>
+              <span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#f0d9d3;">{{ recBadge }}</span>
+            </div>
+            <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:22px;font-weight:500;letter-spacing:.01em;">{{ recTime }}</div>
+            <div style="flex:1;"></div>
+            <div style="display:flex;gap:8px;">
+              <sc-for list="{{ sourceChips }}" as="s" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:8px;background:linear-gradient(180deg,#2a2724,#232120);border:1px solid #35312c;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+                  <span style="width:6px;height:6px;border-radius:50%;background:{{ s.color }};display:block;"></span>
+                  <span style="font-size:12px;color:#c7c2ba;">{{ s.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <sc-if value="{{ bannerDisconnected }}">
+            <div style="display:flex;align-items:center;gap:12px;padding:13px 24px;background:oklch(0.62 0.18 26 / 0.15);border-bottom:1px solid oklch(0.62 0.18 26 / 0.35);">
+              <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.62 0.18 26);"></span>
+              <span style="font-size:13px;color:#f2e3de;flex:1;">iPhone disconnected at 01:12. Camera and microphone are still recording &mdash; everything up to that point is saved.</span>
+              <button onClick="{{ reconnect }}" style="padding:6px 12px;border-radius:7px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #4d473f;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.35);color:#f2efea;font-size:12px;font-weight:600;cursor:pointer;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;">Reconnect</button>
+              <button onClick="{{ stopRec }}" style="padding:6px 12px;border-radius:7px;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:12px;font-weight:600;cursor:pointer;">Stop &amp; keep</button>
+            </div>
+          </sc-if>
+
+          <div ref="{{ stageRef }}" style="flex:1;display:flex;align-items:center;justify-content:center;padding:30px;min-height:0;">
+            <div style="position:relative;flex-shrink:0;overflow:hidden;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.5);width:{{ g.cw }}px;height:{{ g.ch }}px;background:{{ bg }};">
+              <div style="position:absolute;left:{{ g.phL }}px;top:{{ g.phT }}px;width:{{ g.phW }}px;height:{{ g.phH }}px;">
+                <div style="position:absolute;inset:0;box-sizing:border-box;border-radius:{{ g.rOut }}px;padding:{{ g.bez }}px;background:{{ g.bezColor }};box-shadow:0 16px 34px rgba(0,0,0,.22);">
+                  <div style="position:relative;width:100%;height:100%;border-radius:{{ g.rIn }}px;overflow:hidden;background:#FBFAF7;">
+                    <div style="position:absolute;left:50%;top:50%;width:390px;height:844px;transform:translate(-50%,-50%) scale({{ g.k }});background:#FBFAF7;font-family:-apple-system,'Helvetica Neue',Helvetica,sans-serif;color:#1b1a18;">
+                      <div style="height:56px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;">
+                        <span style="font-size:15px;font-weight:600;">9:41</span>
+                        <span style="display:flex;gap:5px;align-items:center;"><span style="width:16px;height:10px;border-radius:2px;background:#1b1a18;display:block;"></span><span style="width:14px;height:10px;border-radius:2px;background:#1b1a18;display:block;"></span><span style="width:24px;height:11px;border-radius:3px;border:1.5px solid #1b1a18;display:block;"></span></span>
+                      </div>
+                      <div style="padding:16px 28px 0;">
+                        <div style="font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8d877c;">Day 12 of 30</div>
+                        <div style="font-size:34px;line-height:1.12;font-weight:600;letter-spacing:-.02em;margin-top:8px;">Wisdom for<br />the morning</div>
+                        <div style="margin-top:22px;height:8px;border-radius:4px;background:#e7e3da;overflow:hidden;"><div style="width:40%;height:100%;background:#2F6B4F;"></div></div>
+                        <div style="margin-top:10px;font-size:14px;color:#8d877c;">12 of 30 days complete</div>
+                        <div style="margin-top:26px;display:flex;flex-direction:column;gap:12px;">
+                          <sc-for list="{{ elorahRows }}" as="r" hint-placeholder-count="3">
+                            <div style="display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:1px solid #eae5dc;border-radius:16px;">
+                              <div style="width:38px;height:38px;border-radius:12px;background:#EDF1EE;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#2F6B4F;">{{ r.n }}</div>
+                              <div style="flex:1;"><div style="font-size:16px;font-weight:600;">{{ r.t }}</div><div style="font-size:13px;color:#8d877c;margin-top:2px;">{{ r.s }}</div></div>
+                              <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid #d8d2c7;"></div>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                      <div style="position:absolute;left:0;right:0;bottom:0;height:86px;border-top:1px solid #eae5dc;background:rgba(251,250,247,.95);display:flex;align-items:flex-start;padding-top:12px;">
+                        <sc-for list="{{ elorahTabs }}" as="t" hint-placeholder-count="4">
+                          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:22px;height:22px;border-radius:7px;background:#ddd8cd;"></div><div style="font-size:11px;color:#8d877c;">{{ t }}</div></div>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <sc-if value="{{ frameOn }}">
+                      <div style="position:absolute;left:50%;transform:translateX(-50%);top:{{ g.islandT }}px;width:{{ g.islandW }}px;height:{{ g.islandH }}px;border-radius:99px;background:#0b0b0d;"></div>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+              <sc-if value="{{ camOn }}">
+                <div style="position:absolute;left:{{ g.camL }}px;top:{{ g.camT }}px;width:{{ g.camW }}px;height:{{ g.camH }}px;border-radius:{{ g.camR }}px;overflow:hidden;background:repeating-linear-gradient(135deg,#d3cdc2 0 7px,#c9c2b6 7px 14px);background-position:{{ g.camCrop }}% 50%;transform:{{ g.mirror }};display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(0,0,0,.18);">
+                  <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:9.5px;letter-spacing:.12em;color:#6f6a60;text-transform:uppercase;">camera</span>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="height:92px;border-top:1px solid #262320;display:flex;align-items:center;padding:0 24px;gap:22px;">
+            <button onClick="{{ stopRec }}" style="display:flex;align-items:center;gap:11px;padding:13px 24px;border-radius:11px;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:14px;font-weight:600;cursor:pointer;">
+              <span style="width:11px;height:11px;border-radius:2px;background:#16150f;display:block;"></span>Stop
+            </button>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <span style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9a948c;">Microphone</span>
+              <div style="width:220px;height:7px;border-radius:4px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,oklch(0.68 0.14 155),oklch(0.74 0.13 140));border-radius:3px;animation:rdmeter 2.1s ease-in-out infinite;"></div></div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="text-align:right;">
+              <div style="font-size:12px;color:#8d8880;">Writing to</div>
+              <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#c7c2ba;margin-top:3px;">~/Movies/elorah-demo.reeldock</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ═══ EDITOR ═══ -->
+      <sc-if value="{{ isEditor }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+          <div style="height:52px;border-bottom:1px solid #2b2825;display:flex;align-items:center;padding:0 18px;gap:14px;background:#201e1c;">
+            <button onClick="{{ goHome }}" style="padding:6px 11px;border-radius:8px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;font-size:12.5px;cursor:pointer;">&lsaquo; Projects</button>
+            <div style="font-size:13px;font-weight:600;">Elorah &mdash; Reading Plan</div>
+            <div style="font-size:12px;color:#9a948c;">{{ savedLabel }}</div>
+            <div style="flex:1;"></div>
+            <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);width:250px;flex-shrink:0;"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 4);left:calc(3px + (100% - 6px) * {{ ratioI }} / 4);"></div>
+              <sc-for list="{{ ratioList }}" as="r" hint-placeholder-count="3">
+                <button onClick="{{ r.go }}" style="{{ r.segStyle }}">{{ r.label }}</button>
+              </sc-for>
+            </div>
+            <button onClick="{{ openMenu }}" style="{{ moreStyle }}">&#8943;</button>
+            <button onClick="{{ openExport }}" style="padding:8px 17px;border-radius:9px;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:12.5px;font-weight:600;cursor:pointer;">Export</button>
+          </div>
+
+          <div ref="{{ stageRef }}" style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;padding:26px 88px 26px 26px;min-height:0;background:#1a1917;">
+            <div style="position:relative;flex-shrink:0;overflow:hidden;border-radius:8px;width:{{ g.cw }}px;height:{{ g.ch }}px;background:{{ bg }};box-shadow:0 26px 64px rgba(0,0,0,.5);">
+              <div style="position:absolute;left:{{ g.phL }}px;top:{{ g.phT }}px;width:{{ g.phW }}px;height:{{ g.phH }}px;transition:left .3s cubic-bezier(.32,.72,0,1),top .3s cubic-bezier(.32,.72,0,1),width .3s cubic-bezier(.32,.72,0,1),height .3s cubic-bezier(.32,.72,0,1);">
+                <div style="position:absolute;inset:0;box-sizing:border-box;border-radius:{{ g.rOut }}px;padding:{{ g.bez }}px;background:{{ g.bezColor }};box-shadow:{{ g.shadow }};">
+                  <div style="position:relative;width:100%;height:100%;border-radius:{{ g.rIn }}px;overflow:hidden;background:#FBFAF7;">
+                    <div style="position:absolute;left:50%;top:50%;width:390px;height:844px;transform:translate(-50%,-50%) scale({{ g.k }});background:#FBFAF7;font-family:-apple-system,'Helvetica Neue',Helvetica,sans-serif;color:#1b1a18;">
+                      <div style="height:56px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;">
+                        <span style="font-size:15px;font-weight:600;">9:41</span>
+                        <span style="display:flex;gap:5px;align-items:center;"><span style="width:16px;height:10px;border-radius:2px;background:#1b1a18;display:block;"></span><span style="width:14px;height:10px;border-radius:2px;background:#1b1a18;display:block;"></span><span style="width:24px;height:11px;border-radius:3px;border:1.5px solid #1b1a18;display:block;"></span></span>
+                      </div>
+                      <div style="padding:16px 28px 0;">
+                        <div style="font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8d877c;">Day 12 of 30</div>
+                        <div style="font-size:34px;line-height:1.12;font-weight:600;letter-spacing:-.02em;margin-top:8px;">Wisdom for<br />the morning</div>
+                        <div style="margin-top:22px;height:8px;border-radius:4px;background:#e7e3da;overflow:hidden;"><div style="width:40%;height:100%;background:#2F6B4F;"></div></div>
+                        <div style="margin-top:10px;font-size:14px;color:#8d877c;">12 of 30 days complete</div>
+                        <div style="margin-top:26px;display:flex;flex-direction:column;gap:12px;">
+                          <sc-for list="{{ elorahRows }}" as="r" hint-placeholder-count="3">
+                            <div style="display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:1px solid #eae5dc;border-radius:16px;">
+                              <div style="width:38px;height:38px;border-radius:12px;background:#EDF1EE;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#2F6B4F;">{{ r.n }}</div>
+                              <div style="flex:1;"><div style="font-size:16px;font-weight:600;">{{ r.t }}</div><div style="font-size:13px;color:#8d877c;margin-top:2px;">{{ r.s }}</div></div>
+                              <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid #d8d2c7;"></div>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                      <div style="position:absolute;left:0;right:0;bottom:0;height:86px;border-top:1px solid #eae5dc;background:rgba(251,250,247,.95);display:flex;align-items:flex-start;padding-top:12px;">
+                        <sc-for list="{{ elorahTabs }}" as="t" hint-placeholder-count="4">
+                          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:22px;height:22px;border-radius:7px;background:#ddd8cd;"></div><div style="font-size:11px;color:#8d877c;">{{ t }}</div></div>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <sc-if value="{{ frameOn }}">
+                      <div style="position:absolute;left:50%;transform:translateX(-50%);top:{{ g.islandT }}px;width:{{ g.islandW }}px;height:{{ g.islandH }}px;border-radius:99px;background:#0b0b0d;"></div>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+              <sc-if value="{{ camOn }}">
+                <div style="position:absolute;left:{{ g.camL }}px;top:{{ g.camT }}px;width:{{ g.camW }}px;height:{{ g.camH }}px;border-radius:{{ g.camR }}px;overflow:hidden;box-shadow:{{ g.shadow }};transition:left .3s cubic-bezier(.32,.72,0,1),top .3s cubic-bezier(.32,.72,0,1),width .3s cubic-bezier(.32,.72,0,1),height .3s cubic-bezier(.32,.72,0,1);background:repeating-linear-gradient(135deg,#d3cdc2 0 7px,#c9c2b6 7px 14px);background-position:{{ g.camCrop }}% 50%;transform:{{ g.mirror }};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;letter-spacing:.12em;color:#6f6a60;text-transform:uppercase;">camera</span>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:15px;background:linear-gradient(180deg,#2c2926,#232120);border:1px solid #3a3630;box-shadow:0 16px 38px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);">
+              <sc-for list="{{ sections }}" as="s" hint-placeholder-count="5">
+                <button onClick="{{ s.go }}" style="{{ s.style }}" style-hover="background:rgba(255,255,255,.06);">
+                  <span style="display:flex;align-items:center;justify-content:center;height:18px;">
+                    <sc-if value="{{ s.isLayout }}">
+                      <span style="display:grid;grid-template-columns:5px 9px;grid-template-rows:1fr 1fr;gap:2px;width:16px;height:14px;"><span style="background:currentColor;border-radius:1px;grid-row:span 2;"></span><span style="background:currentColor;border-radius:1px;opacity:.55;"></span><span style="background:currentColor;border-radius:1px;opacity:.55;"></span></span>
+                    </sc-if>
+                    <sc-if value="{{ s.isPhone }}">
+                      <span style="display:block;width:10px;height:17px;border:1.5px solid currentColor;border-radius:3px;"></span>
+                    </sc-if>
+                    <sc-if value="{{ s.isCamera }}">
+                      <span style="display:block;width:15px;height:15px;border:1.5px solid currentColor;border-radius:50%;"></span>
+                    </sc-if>
+                    <sc-if value="{{ s.isCanvas }}">
+                      <span style="display:block;position:relative;width:18px;height:13px;border-radius:3px;border:1.5px solid currentColor;"><span style="position:absolute;right:1.5px;bottom:1.5px;width:6px;height:6px;border-radius:2px;background:currentColor;opacity:.5;display:block;"></span></span>
+                    </sc-if>
+                    <sc-if value="{{ s.isAudio }}">
+                      <span style="display:flex;align-items:center;gap:2px;height:16px;"><span style="width:2.5px;height:7px;border-radius:2px;background:currentColor;"></span><span style="width:2.5px;height:15px;border-radius:2px;background:currentColor;"></span><span style="width:2.5px;height:10px;border-radius:2px;background:currentColor;"></span></span>
+                    </sc-if>
+                  </span>
+                  <span style="display:block;font-size:9px;font-weight:600;letter-spacing:.01em;margin-top:5px;white-space:nowrap;">{{ s.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="height:176px;border-top:1px solid #2b2825;background:#201e1c;padding:11px 20px 14px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button onClick="{{ togglePlay }}" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">{{ playGlyph }}</button>
+              <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13.5px;color:#e7e3dd;">{{ tStr }} <span style="color:#6b665f;">/ {{ keepStr }}</span></div>
+              <div style="width:1px;height:20px;background:#33302b;margin:0 4px;"></div>
+              <sc-for list="{{ tools }}" as="b" hint-placeholder-count="4">
+                <button onClick="{{ b.go }}" style="{{ b.style }}">{{ b.label }}</button>
+              </sc-for>
+              <div style="flex:1;"></div>
+              <div style="font-size:12px;color:#9a948c;">{{ cutSummary }}</div>
+            </div>
+
+            <div ref="{{ stripRef }}" onPointerDown="{{ scrubDown }}" style="position:relative;height:92px;border-radius:9px;background:#1a1816;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.5);overflow:hidden;cursor:text;">
+              <div style="position:absolute;left:0;right:0;top:0;height:50px;display:flex;gap:1px;">
+                <sc-for list="{{ filmstrip }}" as="k" hint-placeholder-count="22">
+                  <div style="flex:1;background:linear-gradient(180deg,#332f2b,#282521);display:flex;align-items:center;justify-content:center;">
+                    <div style="width:22%;height:70%;border-radius:2px;background:{{ k }};"></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="position:absolute;left:0;right:0;bottom:0;height:42px;display:flex;align-items:center;gap:2px;padding:0 5px;border-top:1px solid #2a2724;background:#1e1c1a;">
+                <sc-for list="{{ wave }}" as="w" hint-placeholder-count="90">
+                  <div style="flex:1;border-radius:1px;background:#4d4841;height:{{ w }}px;"></div>
+                </sc-for>
+              </div>
+              <sc-for list="{{ cuts }}" as="c" hint-placeholder-count="1">
+                <div style="position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(12,11,10,.86) 0 6px,rgba(28,26,24,.86) 6px 12px);border-left:1px dashed #5a544c;border-right:1px dashed #5a544c;left:{{ c.l }}px;width:{{ c.w }}px;display:flex;align-items:center;justify-content:center;">
+                  <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:9.5px;letter-spacing:.1em;color:#6f6a60;text-transform:uppercase;">removed</span>
+                </div>
+              </sc-for>
+              <sc-for list="{{ segs }}" as="s" hint-placeholder-count="1">
+                <div onPointerDown="{{ s.go }}" style="{{ s.style }}"></div>
+              </sc-for>
+              <div onPointerDown="{{ dragTrimStart }}" style="position:absolute;top:0;bottom:0;width:14px;cursor:ew-resize;display:flex;align-items:center;justify-content:center;left:{{ trimStartHandleL }}px;z-index:3;">
+                <div style="width:5px;height:34px;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));box-shadow:0 1px 3px rgba(0,0,0,.5);"></div>
+              </div>
+              <div onPointerDown="{{ dragTrimEnd }}" style="position:absolute;top:0;bottom:0;width:14px;cursor:ew-resize;display:flex;align-items:center;justify-content:center;left:{{ trimEndHandleL }}px;z-index:3;">
+                <div style="width:5px;height:34px;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));box-shadow:0 1px 3px rgba(0,0,0,.5);"></div>
+              </div>
+              <div style="position:absolute;top:0;bottom:0;width:2px;background:#f2efea;pointer-events:none;z-index:4;left:{{ playheadL }}px;">
+                <div style="position:absolute;top:-1px;left:-5px;width:12px;height:8px;border-radius:2px;background:#f2efea;"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;">
+              <sc-for list="{{ ruler }}" as="t" hint-placeholder-count="5"><span>{{ t }}</span></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:320px;box-sizing:border-box;border-left:1px solid #2b2825;background:#201e1c;overflow-y:auto;padding:20px 20px 32px;display:flex;flex-direction:column;gap:20px;">
+          <div>
+            <div style="font-size:16px;font-weight:600;letter-spacing:-.012em;">{{ secTitle }}</div>
+            <div style="font-size:12.5px;color:#8d8880;margin-top:5px;line-height:1.5;">{{ secHint }}</div>
+          </div>
+
+          <sc-if value="{{ secLayout }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <sc-for list="{{ presetList }}" as="p" hint-placeholder-count="5">
+                <button onClick="{{ p.go }}" style="{{ p.style }}">
+                  <span style="display:block;position:relative;width:100%;aspect-ratio:16/9;border-radius:5px;background:#1b1917;box-shadow:inset 0 1px 3px rgba(0,0,0,.5);overflow:hidden;">
+                    <span style="position:absolute;background:#6d675f;border-radius:2px;left:{{ p.px }}%;top:{{ p.py }}%;width:{{ p.pw }}%;height:{{ p.ph }}%;display:block;"></span>
+                    <sc-if value="{{ p.hasCam }}">
+                      <span style="position:absolute;background:#4b4640;left:{{ p.cx }}%;top:{{ p.cy }}%;width:{{ p.cw }}%;height:{{ p.ch }}%;border-radius:{{ p.cr }}px;display:block;"></span>
+                    </sc-if>
+                  </span>
+                  <span style="display:block;font-size:11.5px;font-weight:600;margin-top:7px;text-align:left;">{{ p.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ secPhone }}">
+            <div>
+              <div style="font-size:12.5px;color:#a6a19a;margin-bottom:8px;">Size</div>
+              <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 3);left:calc(3px + (100% - 6px) * {{ phoneSizeI }} / 3);"></div>
+                <sc-for list="{{ phoneSizes }}" as="b" hint-placeholder-count="3">
+                  <button onClick="{{ b.go }}" style="{{ b.style }}">{{ b.label }}</button>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:15px;">
+              <span style="font-size:12.5px;color:#a6a19a;">Device frame</span>
+              <button onClick="{{ toggleFrame }}" style="position:relative;width:42px;height:25px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ frameToggleBg }};"><span style="position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ frameToggleKnob }};"></span></button>
+            </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:15px;">
+              <span style="font-size:12.5px;color:#a6a19a;">Shadow</span>
+              <button onClick="{{ toggleShadow }}" style="position:relative;width:42px;height:25px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ shadowToggleBg }};"><span style="position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ shadowToggleKnob }};"></span></button>
+            </div>
+              <sc-if value="{{ showSwap }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:15px;">
+              <span style="font-size:12.5px;color:#a6a19a;">Swap sides</span>
+              <button onClick="{{ toggleSwap }}" style="position:relative;width:42px;height:25px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ swapToggleBg }};"><span style="position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ swapToggleKnob }};"></span></button>
+            </div>
+              </sc-if>
+              <div style="margin-top:16px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12.5px;color:#a6a19a;">Corner radius</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ radius }}</span></div>
+              <div onPointerDown="{{ slideRadius }}" style="height:22px;display:flex;align-items:center;cursor:pointer;">
+                <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                  <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));width:{{ radiusPct }}%;"></div>
+                  <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ radiusPct }}%;"></div>
+                </div>
+              </div>
+            </div>
+              <div style="margin-top:16px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12.5px;color:#a6a19a;">Screen zoom</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ zoom }}</span></div>
+              <div onPointerDown="{{ slideZoom }}" style="height:22px;display:flex;align-items:center;cursor:pointer;">
+                <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                  <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));width:{{ zoomPct }}%;"></div>
+                  <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ zoomPct }}%;"></div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ secCamera }}">
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:12.5px;color:#a6a19a;">Include camera</span>
+                <button onClick="{{ toggleCam }}" style="position:relative;width:42px;height:25px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ camToggleBg }};"><span style="position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ camToggleKnob }};"></span></button>
+              </div>
+              <sc-if value="{{ camOn }}">
+                <div>
+                  <sc-if value="{{ showShape }}">
+                    <div style="margin-top:16px;">
+                      <div style="font-size:12.5px;color:#a6a19a;margin-bottom:8px;">Shape</div>
+                      <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 2);left:calc(3px + (100% - 6px) * {{ shapeI }} / 2);"></div>
+                        <sc-for list="{{ shapeList }}" as="b" hint-placeholder-count="2">
+                          <button onClick="{{ b.go }}" style="{{ b.style }}">{{ b.label }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <div style="margin-top:16px;">
+                    <div style="font-size:12.5px;color:#a6a19a;margin-bottom:8px;">Size</div>
+                    <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 3);left:calc(3px + (100% - 6px) * {{ camSizeI }} / 3);"></div>
+                      <sc-for list="{{ camSizes }}" as="b" hint-placeholder-count="3">
+                        <button onClick="{{ b.go }}" style="{{ b.style }}">{{ b.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <sc-if value="{{ showAnchors }}">
+                    <div style="margin-top:16px;">
+                      <div style="font-size:12.5px;color:#a6a19a;margin-bottom:8px;">Position</div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+                        <sc-for list="{{ anchors }}" as="a" hint-placeholder-count="4">
+                          <button onClick="{{ a.go }}" style="{{ a.style }}">
+                            <span style="display:block;position:relative;width:100%;aspect-ratio:16/9;border-radius:4px;background:#1b1917;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                              <span style="position:absolute;width:26%;height:40%;border-radius:99px;background:{{ a.dot }};left:{{ a.dx }}%;top:{{ a.dy }}%;display:block;"></span>
+                            </span>
+                          </button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:15px;">
+              <span style="font-size:12.5px;color:#a6a19a;">Mirror</span>
+              <button onClick="{{ toggleMirror }}" style="position:relative;width:42px;height:25px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ mirrorToggleBg }};"><span style="position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ mirrorToggleKnob }};"></span></button>
+            </div>
+                  <div style="margin-top:16px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12.5px;color:#a6a19a;">Crop position</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ crop }}</span></div>
+              <div onPointerDown="{{ slideCrop }}" style="height:22px;display:flex;align-items:center;cursor:pointer;">
+                <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                  <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));width:{{ cropPct }}%;"></div>
+                  <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ cropPct }}%;"></div>
+                </div>
+              </div>
+            </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ secCanvas }}">
+            <div>
+              <div style="font-size:12.5px;color:#a6a19a;margin-bottom:8px;">Aspect ratio</div>
+              <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 4);left:calc(3px + (100% - 6px) * {{ ratioI }} / 4);"></div>
+                <sc-for list="{{ ratioList }}" as="r" hint-placeholder-count="4">
+                  <button onClick="{{ r.go }}" style="{{ r.style }}">{{ r.label }}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ isCustomRatio }}">
+                <div style="margin-top:12px;padding:12px 13px 14px;border-radius:10px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);">
+                  <div style="font-size:11.5px;color:#8d8880;">Output size in pixels.</div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;">
+                  <span style="font-size:12.5px;color:#a6a19a;">Width</span>
+                  <div style="display:flex;align-items:center;gap:0;border-radius:8px;overflow:hidden;border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.3);">
+                    <button onClick="{{ cwDec }}" style="width:26px;height:28px;border:none;border-right:1px solid #3a3630;background:linear-gradient(180deg,#3b3733,#2e2b27);color:#c7c2ba;font-size:13px;cursor:pointer;">&minus;</button>
+                    <span style="min-width:56px;text-align:center;padding:0 6px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#f2efea;background:#211f1c;line-height:28px;">{{ cwVal }}</span>
+                    <button onClick="{{ cwInc }}" style="width:26px;height:28px;border:none;border-left:1px solid #3a3630;background:linear-gradient(180deg,#3b3733,#2e2b27);color:#c7c2ba;font-size:13px;cursor:pointer;">+</button>
+                  </div>
+                </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;">
+                  <span style="font-size:12.5px;color:#a6a19a;">Height</span>
+                  <div style="display:flex;align-items:center;gap:0;border-radius:8px;overflow:hidden;border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.3);">
+                    <button onClick="{{ chDec }}" style="width:26px;height:28px;border:none;border-right:1px solid #3a3630;background:linear-gradient(180deg,#3b3733,#2e2b27);color:#c7c2ba;font-size:13px;cursor:pointer;">&minus;</button>
+                    <span style="min-width:56px;text-align:center;padding:0 6px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#f2efea;background:#211f1c;line-height:28px;">{{ chVal }}</span>
+                    <button onClick="{{ chInc }}" style="width:26px;height:28px;border:none;border-left:1px solid #3a3630;background:linear-gradient(180deg,#3b3733,#2e2b27);color:#c7c2ba;font-size:13px;cursor:pointer;">+</button>
+                  </div>
+                </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ isFixedRatio }}">
+                <div style="display:flex;justify-content:space-between;margin-top:11px;">
+                  <span style="font-size:12.5px;color:#a6a19a;">Exports at</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ outRes }}</span>
+                </div>
+              </sc-if>
+
+              <div style="height:1px;background:#2e2b27;margin:20px 0;"></div>
+
+              <div style="font-size:12.5px;color:#a6a19a;margin-bottom:8px;">Background</div>
+              <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 4);left:calc(3px + (100% - 6px) * {{ bgKindI }} / 4);"></div>
+                <sc-for list="{{ bgKinds }}" as="b" hint-placeholder-count="4">
+                  <button onClick="{{ b.go }}" style="{{ b.style }}">{{ b.label }}</button>
+                </sc-for>
+              </div>
+
+              <sc-if value="{{ bgIsSolid }}">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                  <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
+                    <button onClick="{{ s.go }}" style="{{ s.style }}"></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ bgIsGradient }}">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+                  <sc-for list="{{ gradients }}" as="s" hint-placeholder-count="6">
+                    <button onClick="{{ s.go }}" style="{{ s.style }}"></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ bgIsPattern }}">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+                  <sc-for list="{{ patterns }}" as="s" hint-placeholder-count="4">
+                    <button onClick="{{ s.go }}" style="{{ s.style }}"><span style="display:block;font-size:10.5px;font-weight:600;color:#4a453d;text-align:left;">{{ s.label }}</span></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ bgIsImage }}">
+                <div style="margin-top:12px;">
+                  <div style="height:96px;border-radius:10px;border:1px dashed #4a443c;background:repeating-linear-gradient(135deg,#252220 0 8px,#201e1c 8px 16px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                    <span style="font-size:12.5px;color:#a6a19a;">Drop an image</span>
+                    <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;letter-spacing:.08em;color:#5f5b55;text-transform:uppercase;">png &middot; jpg &middot; heic</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;">
+                    <span style="font-size:12.5px;color:#a6a19a;">Fit</span>
+                    <div style="position:relative;display:flex;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);width:150px;"><div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 2);left:calc(3px + (100% - 6px) * {{ fitI }} / 2);"></div>
+                      <sc-for list="{{ fits }}" as="b" hint-placeholder-count="2">
+                        <button onClick="{{ b.go }}" style="{{ b.style }}">{{ b.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div style="height:1px;background:#2e2b27;margin:20px 0;"></div>
+              <div style="margin-top:16px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12.5px;color:#a6a19a;">Outer padding</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ pad }}</span></div>
+              <div onPointerDown="{{ slidePad }}" style="height:22px;display:flex;align-items:center;cursor:pointer;">
+                <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                  <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));width:{{ padPct }}%;"></div>
+                  <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ padPct }}%;"></div>
+                </div>
+              </div>
+            </div>
+              <sc-if value="{{ showGap }}">
+                <div style="margin-top:16px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12.5px;color:#a6a19a;">Gap</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ gap }}</span></div>
+              <div onPointerDown="{{ slideGap }}" style="height:22px;display:flex;align-items:center;cursor:pointer;">
+                <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                  <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));width:{{ gapPct }}%;"></div>
+                  <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ gapPct }}%;"></div>
+                </div>
+              </div>
+            </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ secAudio }}">
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:15px;">
+              <span style="font-size:12.5px;color:#a6a19a;">Mute microphone</span>
+              <button onClick="{{ toggleMute }}" style="position:relative;width:42px;height:25px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ muteToggleBg }};"><span style="position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ muteToggleKnob }};"></span></button>
+            </div>
+              <div style="margin-top:16px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12.5px;color:#a6a19a;">Microphone</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ mic }}</span></div>
+              <div onPointerDown="{{ slideMic }}" style="height:22px;display:flex;align-items:center;cursor:pointer;">
+                <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                  <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));width:{{ micPct }}%;"></div>
+                  <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ micPct }}%;"></div>
+                </div>
+              </div>
+            </div>
+              <div style="margin-top:16px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                  <span style="display:flex;align-items:center;gap:7px;"><span style="font-size:12.5px;color:#a6a19a;">Phone audio</span><button onClick="{{ openAudioInfo }}" style="width:16px;height:16px;border-radius:50%;padding:0;cursor:pointer;font-size:10px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;background:#332f2b;border:1px solid #423d37;color:#8d8880;">?</button></span>
+                  <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ phoneVol }}</span>
+                </div>
+                <div onPointerDown="{{ slidePhoneVol }}" style="height:22px;display:flex;align-items:center;cursor:pointer;">
+                  <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+                    <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.74 0.14 155),oklch(0.64 0.15 155));width:{{ phoneVolPct }}%;"></div>
+                    <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ phoneVolPct }}%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="flex:1;"></div>
+          <div style="padding:12px 14px;border-radius:10px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);">
+            <div style="font-size:12px;color:#8d8880;line-height:1.5;">Every change is stored in <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;color:#a6a19a;">project.json</span>. The recorded files are never rewritten.</div>
+            <button onClick="{{ openJson }}" style="margin-top:10px;padding:5px 11px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07);color:#c7c2ba;">Show project data</button>
+          </div>
+        </div>
+
+        <!-- EXPORT SHEET -->
+        <sc-if value="{{ showExport }}">
+          <div style="position:absolute;inset:0;background:rgba(10,9,8,.6);display:flex;align-items:center;justify-content:center;">
+            <div style="width:720px;border-radius:14px;background:#242220;border:1px solid #3a3630;box-shadow:0 40px 90px rgba(0,0,0,.6);overflow:hidden;">
+              <div style="padding:24px 28px 0;">
+                <div style="font-size:19px;font-weight:600;letter-spacing:-.018em;">Export</div>
+                <div style="font-size:13px;color:#8d8880;margin-top:5px;">H.264 MP4, rendered on this Mac.</div>
+              </div>
+
+              <sc-if value="{{ exportIdle }}">
+                <div style="padding:22px 28px 0;">
+                  <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;margin-bottom:12px;">Aspect ratio</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
+                    <sc-for list="{{ exportCards }}" as="e" hint-placeholder-count="3">
+                      <button onClick="{{ e.go }}" style="{{ e.style }}">
+                        <span style="display:flex;align-items:center;justify-content:center;height:132px;">
+                          <span style="position:relative;display:block;border-radius:4px;overflow:hidden;width:{{ e.cw }}px;height:{{ e.ch }}px;background:{{ e.bg }};">
+                            <span style="position:absolute;border-radius:{{ e.pr }}px;background:#1c1b19;left:{{ e.phL }}px;top:{{ e.phT }}px;width:{{ e.phW }}px;height:{{ e.phH }}px;display:block;"></span>
+                            <sc-if value="{{ e.hasCam }}">
+                              <span style="position:absolute;background:#b9b2a6;left:{{ e.camL }}px;top:{{ e.camT }}px;width:{{ e.camW }}px;height:{{ e.camH }}px;border-radius:{{ e.camR }}px;display:block;"></span>
+                            </sc-if>
+                          </span>
+                        </span>
+                        <span style="display:block;font-size:12.5px;font-weight:600;margin-top:10px;">{{ e.label }}</span>
+                        <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#8d8880;margin-top:3px;">{{ e.res }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+
+                  <div style="margin-top:22px;display:flex;flex-direction:column;gap:1px;border-radius:11px;overflow:hidden;border:1px solid #3a3630;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#2b2825;"><span style="font-size:13px;color:#a6a19a;">Quality</span><span style="font-size:13px;font-weight:600;">High &mdash; 12 Mbps</span></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#2b2825;"><span style="font-size:13px;color:#a6a19a;">Frame rate</span><span style="font-size:13px;font-weight:600;">60 fps</span></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#2b2825;"><span style="font-size:13px;color:#a6a19a;">Destination</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#e7e3dd;">~/Movies/ReelDock</span></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:22px 28px 24px;">
+                  <button onClick="{{ startExport }}" style="padding:11px 22px;border-radius:10px;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:13.5px;font-weight:600;cursor:pointer;">Export video</button>
+                  <button onClick="{{ closeExport }}" style="padding:11px 18px;border-radius:10px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;font-size:13.5px;cursor:pointer;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;">Cancel</button>
+                  <div style="flex:1;"></div>
+                  <div style="font-size:12px;color:#9a948c;">Estimated 38&nbsp;MB</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ exportRunning }}">
+                <div style="padding:30px 28px 28px;">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">
+                    <span style="font-size:14px;color:#c7c2ba;">Rendering composition&hellip;</span>
+                    <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;">{{ exportPct }}%</span>
+                  </div>
+                  <div style="height:9px;border-radius:5px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);overflow:hidden;"><div style="height:100%;border-radius:4px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));transition:width .18s linear;width:{{ exportPct }}%;"></div></div>
+                  <div style="font-size:12.5px;color:#8d8880;margin-top:12px;">{{ exportStage }}</div>
+                  <div style="margin-top:26px;"><button onClick="{{ closeExport }}" style="padding:10px 18px;border-radius:10px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;font-size:13px;cursor:pointer;">Cancel</button></div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ exportDone }}">
+                <div style="padding:30px 28px 28px;">
+                  <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:oklch(0.68 0.14 155);"></span>
+                    <span style="font-size:15px;font-weight:600;">Export complete</span>
+                  </div>
+                  <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12.5px;color:#a6a19a;margin-top:12px;">~/Movies/ReelDock/elorah-reading-plan.mp4</div>
+                  <div style="font-size:12.5px;color:#9a948c;margin-top:6px;">1920 &times; 1080 &middot; 1:04 &middot; 37.4&nbsp;MB</div>
+                  <div style="display:flex;gap:10px;margin-top:24px;">
+                    <button onClick="{{ closeExport }}" style="padding:11px 20px;border-radius:10px;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:13.5px;font-weight:600;cursor:pointer;">Reveal in Finder</button>
+                    <button onClick="{{ closeExport }}" style="padding:11px 18px;border-radius:10px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;font-size:13.5px;cursor:pointer;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;">Done</button>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ exportFailed }}">
+                <div style="padding:30px 28px 28px;">
+                  <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:oklch(0.62 0.18 26);"></span>
+                    <span style="font-size:15px;font-weight:600;">Export stopped at 64%</span>
+                  </div>
+                  <div style="font-size:13px;line-height:1.55;color:#a6a19a;margin-top:12px;max-width:520px;text-wrap:pretty;">The renderer ran out of space on Macintosh HD. Your recordings are untouched &mdash; free up about 2&nbsp;GB, or choose another destination, then try again.</div>
+                  <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#6b665f;margin-top:12px;">writer_error &minus;11800 &middot; disk_full</div>
+                  <div style="display:flex;gap:10px;margin-top:24px;">
+                    <button onClick="{{ startExport }}" style="padding:11px 20px;border-radius:10px;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;font-size:13.5px;font-weight:600;cursor:pointer;">Try again</button>
+                    <button onClick="{{ closeExport }}" style="padding:11px 18px;border-radius:10px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;font-size:13.5px;cursor:pointer;transition:transform .1s cubic-bezier(.32,.72,0,1),box-shadow .14s ease,background .18s ease;">Close</button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <!-- ═══ PREFERENCES ═══ -->
+      <sc-if value="{{ isPrefs }}">
+        <div style="flex:1;display:flex;flex-direction:column;">
+          <div style="height:60px;border-bottom:1px solid #2b2825;display:flex;align-items:center;justify-content:center;gap:6px;background:#232120;">
+            <sc-for list="{{ prefTabs }}" as="t" hint-placeholder-count="4">
+              <button onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button>
+            </sc-for>
+          </div>
+          <div style="flex:1;display:flex;justify-content:center;padding:44px 40px;overflow-y:auto;">
+            <div style="width:620px;display:flex;flex-direction:column;gap:26px;">
+              <sc-for list="{{ prefGroups }}" as="grp" hint-placeholder-count="2">
+                <div>
+                  <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;margin-bottom:11px;">{{ grp.title }}</div>
+                  <div style="border-radius:12px;border:1px solid #37332e;overflow:hidden;display:flex;flex-direction:column;gap:1px;background:#37332e;">
+                    <sc-for list="{{ grp.rows }}" as="row" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 18px;background:#24221f;">
+                        <div>
+                          <div style="font-size:13.5px;">{{ row.label }}</div>
+                          <sc-if value="{{ row.hasHint }}"><div style="font-size:12px;color:#9a948c;margin-top:3px;">{{ row.hint }}</div></sc-if>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:8px;background:#302d29;border:1px solid #3d3833;font-size:12.5px;font-weight:500;">{{ row.value }}<span style="color:#9a948c;font-size:10px;">&#9662;</span></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="font-size:12px;color:#8d8880;line-height:1.6;text-wrap:pretty;">Recordings stay on this Mac. ReelDock never uploads a file unless you ask it to.</div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+
+
+  <sc-if value="{{ popOpen }}">
+    <div ref="{{ popRef }}" style="{{ popStyle }}">
+      <div style="{{ arrowStyle }}"></div>
+      <sc-if value="{{ popIsMenu }}">
+        <div style="position:relative;padding:6px;min-width:236px;display:flex;flex-direction:column;gap:1px;">
+          <sc-for list="{{ menuItems }}" as="m" hint-placeholder-count="4">
+            <button onClick="{{ closePop }}" style="{{ m.style }}" style-hover="background:rgba(255,255,255,.06);"><span>{{ m.label }}</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#6b665f;">{{ m.key }}</span></button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ popIsAudio }}">
+        <div style="position:relative;padding:16px;width:280px;">
+          <div style="font-size:13.5px;font-weight:600;color:#f2efea;">Phone audio</div>
+          <div style="font-size:12.5px;color:#a6a19a;margin-top:7px;line-height:1.55;text-wrap:pretty;">Only captured when the connected iPhone routes audio over the cable. If the track is silent, narrate with the microphone instead.</div>
+          <button onClick="{{ closePop }}" style="margin-top:14px;padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;">Got it</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ popIsJson }}">
+        <div style="position:relative;padding:14px 16px;width:330px;">
+          <div style="font-size:12.5px;font-weight:600;color:#f2efea;">project.json</div>
+          <div style="font-size:11.5px;color:#8d8880;margin-top:5px;line-height:1.5;">Written beside the untouched source files.</div>
+          <pre style="margin:11px 0 0;padding:11px 12px;border-radius:9px;background:#191715;border:1px solid #2f2b27;box-shadow:inset 0 1px 3px rgba(0,0,0,.5);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;line-height:1.6;color:#b5b0a8;max-height:260px;overflow:auto;white-space:pre;">{{ projectJson }}</pre>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1360,&quot;height&quot;:1030},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;permissions&quot;,&quot;home&quot;,&quot;setup&quot;,&quot;recording&quot;,&quot;editor&quot;,&quot;prefs&quot;],&quot;default&quot;:&quot;editor&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;canvasBg&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#F4F2EC&quot;,&quot;#E8E2D6&quot;,&quot;#1C1B19&quot;,&quot;#2F4C46&quot;],&quot;default&quot;:&quot;#F4F2EC&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;deviceFrame&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+class Component extends DCLogic {
+  LAYOUTS = {
+    focus:     { label:'Phone focus',        cam:'bubble', anchors:true,  swap:false, gap:false },
+    side:      { label:'Side by side',       cam:'pane',   anchors:false, swap:true,  gap:true  },
+    pip:       { label:'Picture in picture', cam:'bubble', anchors:true,  swap:false, gap:false },
+    presenter: { label:'Presenter focus',    cam:'pane',   anchors:false, swap:true,  gap:true  },
+    vertical:  { label:'Vertical demo', ratio:'9:16', cam:'bubble', anchors:true, swap:false, gap:false }
+  };
+  THUMB = {
+    focus:     { px:39, py:8,  pw:22, ph:84, hasCam:true,  cx:78, cy:62, cw:15, ch:26, cr:9 },
+    side:      { px:7,  py:12, pw:19, ph:76, hasCam:true,  cx:32, cy:22, cw:60, ch:56, cr:3 },
+    pip:       { px:38, py:5,  pw:23, ph:90, hasCam:true,  cx:70, cy:60, cw:20, ch:34, cr:11 },
+    presenter: { px:74, py:20, pw:16, ph:60, hasCam:true,  cx:7,  cy:16, cw:60, ch:68, cr:3 },
+    vertical:  { px:41, py:15, pw:18, ph:70, hasCam:true,  cx:62, cy:9,  cw:16, ch:28, cr:9 }
+  };
+  SIZES = { S:0, M:1, L:2 };
+  wave = Array.from({length:96},(_,i)=>4+Math.round(Math.abs(Math.sin(i*0.41)*Math.cos(i*0.13)+Math.sin(i*0.07))*15));
+  film = Array.from({length:24},(_,i)=>['#5b554d','#6a635a','#514b44','#605a51'][i%4]);
+  stageRef = React.createRef();
+  stripRef = React.createRef();
+  popRef = React.createRef();
+
+  DOC = {
+    ratio:'16:9', layout:'pip',
+    phoneSize:'L', frame:true, shadow:true, radius:34, zoom:100, swap:false,
+    camOn:true, camShape:'circle', camSize:'M', camAnchor:'br', mirror:true, crop:50,
+    bg:'#F4F2EC', bgKind:'solid', grad:0, pat:0, fit:'cover', cw:1600, chh:1200, pad:5, gap:4,
+    mic:88, phoneVol:42, muted:false,
+    dur:64, segments:[{start:2.5,end:58}]
+  };
+
+  state = {
+    screen:(this.props&&this.props.startScreen)||'editor',
+    banner:null, perm:'pending', phoneConnected:true,
+    doc:{ ...this.DOC, frame:(this.props&&this.props.deviceFrame)!==false, bg:(this.props&&this.props.canvasBg)||'#F4F2EC' },
+    past:[], future:[], selSeg:0,
+    recSecs:0, playing:false, t:11.4,
+    showExport:false, exportState:'idle', exportPct:0, exportRatio:'16:9',
+    prefTab:'General', pop:null, pos:null, stage:{w:908,h:546}, section:'layout'
+  };
+
+  /* ── history ─────────────────────────────────────────────── */
+  push(){ this.setState(s=>({past:[...s.past,JSON.stringify(s.doc)].slice(-60),future:[]})); }
+  set(patch,quiet){
+    this.setState(s=>{
+      if(!Object.keys(patch).some(k=>JSON.stringify(s.doc[k])!==JSON.stringify(patch[k]))) return null;
+      const past=quiet?s.past:[...s.past,JSON.stringify(s.doc)].slice(-60);
+      return {doc:{...s.doc,...patch}, past, future:quiet?s.future:[]};
+    });
+  }
+  undo(){ this.setState(s=>{ if(!s.past.length) return null;
+    const past=[...s.past], prev=JSON.parse(past.pop());
+    return {past,future:[...s.future,JSON.stringify(s.doc)],doc:prev,selSeg:0}; }); }
+  redo(){ this.setState(s=>{ if(!s.future.length) return null;
+    const future=[...s.future], next=JSON.parse(future.pop());
+    return {future,past:[...s.past,JSON.stringify(s.doc)],doc:next,selSeg:0}; }); }
+
+  /* ── geometry ────────────────────────────────────────────── */
+  GRADS=['linear-gradient(160deg,#F9F7F1,#E2DACA)','linear-gradient(160deg,#F1E7DA,#D6BFA6)',
+    'linear-gradient(160deg,#33474F,#151F26)','linear-gradient(160deg,#F2ECE4,#C3D4DE)',
+    'linear-gradient(160deg,#33544D,#182B29)','linear-gradient(160deg,#EDE4EC,#C9BBD4)'];
+  PATS=[
+    {label:'Dots',  css:'radial-gradient(#d7d0c2 1.5px, transparent 1.6px) 0 0/14px 14px, #F4F2EC'},
+    {label:'Grid',  css:'linear-gradient(#e3ddd1 1px,transparent 1px) 0 0/22px 22px, linear-gradient(90deg,#e3ddd1 1px,transparent 1px) 0 0/22px 22px, #F8F6F0'},
+    {label:'Lines', css:'repeating-linear-gradient(135deg,#EBE4D7 0 9px,#F6F3EB 9px 18px)'},
+    {label:'Arcs',  css:'radial-gradient(circle at 28% 26%, #EBE4D6 0 40%, transparent 40.5%) 0 0/110px 110px, #F8F6F0'}
+  ];
+  IMGCSS='repeating-linear-gradient(135deg,#cfc9bf 0 11px,#c3bcb1 11px 22px)';
+  A(r){ if(r==='custom'){ const d=this.state.doc; return d.cw/d.chh; } return { '16:9':16/9, '9:16':9/16, '1:1':1 }[r] || 16/9; }
+  bgCss(){ const d=this.state.doc;
+    return d.bgKind==='gradient'?this.GRADS[d.grad]
+      :d.bgKind==='pattern'?this.PATS[d.pat].css
+      :d.bgKind==='image'?this.IMGCSS:d.bg; }
+  cl(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  fmt2(s){ const m=Math.floor(Math.max(0,s)/60), x=Math.max(0,Math.floor(s%60)); return String(m).padStart(2,'0')+':'+String(x).padStart(2,'0'); }
+
+  /* layout presets are computed against the live ratio, never stored as pixels */
+  compose(){
+    const d=this.state.doc, a=this.A(d.ratio), meta=this.LAYOUTS[d.layout];
+    const padY=d.pad/100, padX=padY/a;
+    const x0=padX, y0=padY, W=1-2*padX, H=1-2*padY;
+    const gapX=meta.gap ? (d.gap/100)/a : 0;
+    const pi=this.SIZES[d.phoneSize], ci=this.SIZES[d.camSize];
+    const pw=(h)=>h*(390/844)/a;
+    let phone, cam=null;
+    if(d.layout==='side'){
+      const ph=H*[.72,.86,1][pi], w=pw(ph);
+      const camW=Math.max(.12, W-w-gapX), camH=camW*a/(16/9);
+      phone={ x:d.swap ? x0+W-w : x0, y:y0+(H-ph)/2, h:ph };
+      cam=d.camOn?{ x:d.swap ? x0 : x0+w+gapX, y:y0+(H-camH)/2, w:camW, h:camH }:null;
+    } else if(d.layout==='presenter'){
+      const camW=W*[.55,.63,.71][ci], camH=camW*a/(16/9);
+      const colW=Math.max(.1, W-camW-gapX);
+      const ph=Math.min(H*[.6,.74,.88][pi], colW*a/(390/844));
+      const w=pw(ph);
+      const cx=d.swap ? x0+W-camW : x0;
+      const colX=d.swap ? x0 : x0+camW+gapX;
+      phone={ x:colX+(colW-w)/2, y:y0+(H-ph)/2, h:ph };
+      cam=d.camOn?{ x:cx, y:y0+(H-camH)/2, w:camW, h:camH }:null;
+    } else {
+      const hf = d.layout==='pip' ? [.8,.9,1] : (d.layout==='vertical' ? [.6,.72,.84] : [.72,.86,1]);
+      const ph=H*hf[pi], w=pw(ph);
+      phone={ x:x0+(W-w)/2, y:y0+(H-ph)/2, h:ph };
+      if(d.camOn){
+        const cf = d.layout==='pip' ? [.13,.17,.22] : (d.layout==='vertical' ? [.18,.24,.30] : [.10,.13,.17]);
+        const cw=W*cf[ci], ch=cw*a/(d.camShape==='circle'?1:16/9);
+        const insX=padX+.022, insY=padY+.022*a;
+        cam={ x:d.camAnchor[1]==='l' ? insX : 1-cw-insX,
+              y:d.camAnchor[0]==='t' ? insY : 1-ch-insY, w:cw, h:ch };
+      }
+    }
+    return { phone, cam };
+  }
+
+  geo(){
+    const d=this.state.doc, a=this.A(d.ratio), st=this.state.stage;
+    const ch=Math.floor(Math.min(st.h, st.w/a)), cw=Math.round(ch*a);
+    const { phone, cam } = this.compose();
+    const phH=phone.h*ch, phW=phH*(390/844);
+    const bez=d.frame?Math.max(2,Math.round(phH*0.014)):0;
+    const rOut=Math.round(phH*(d.radius/400)+bez);
+    const innerH=phH-2*bez;
+    return {
+      cw, ch,
+      phL:Math.round(phone.x*cw), phT:Math.round(phone.y*ch), phW:Math.round(phW), phH:Math.round(phH),
+      bez, rOut, rIn:Math.max(1,rOut-bez), bezColor:d.frame?'#0b0b0d':'transparent',
+      k:((innerH/844)*(d.zoom/100)).toFixed(4),
+      shadow:d.shadow?'0 20px 44px rgba(0,0,0,.26)':'none',
+      islandT:Math.round(innerH*0.016), islandW:Math.round(innerH*0.121), islandH:Math.round(innerH*0.0355),
+      camL:cam?Math.round(cam.x*cw):0, camT:cam?Math.round(cam.y*ch):0,
+      camW:cam?Math.round(cam.w*cw):0, camH:cam?Math.round(cam.h*ch):0,
+      camR:cam?(d.camShape==='circle'&&this.LAYOUTS[d.layout].cam==='bubble'?Math.round(cam.w*cw/2):Math.round(cam.w*cw*0.045)):0,
+      camCrop:d.crop, mirror:d.mirror?'scaleX(-1)':'none'
+    };
+  }
+
+  /* ── timeline ────────────────────────────────────────────── */
+  segs(){ return this.state.doc.segments; }
+  kept(){ return this.segs().reduce((n,s)=>n+(s.end-s.start),0); }
+  split(){
+    const t=this.state.t, segs=this.segs();
+    const i=segs.findIndex(s=>t>s.start+.4&&t<s.end-.4);
+    if(i<0) return;
+    const s=segs[i];
+    this.set({segments:[...segs.slice(0,i),{start:s.start,end:t},{start:t,end:s.end},...segs.slice(i+1)]});
+    this.setState({selSeg:i+1});
+  }
+  removeSeg(){
+    const segs=this.segs(); if(segs.length<2) return;
+    const i=Math.min(this.state.selSeg,segs.length-1);
+    this.set({segments:segs.filter((_,n)=>n!==i)});
+    this.setState(s=>({selSeg:Math.max(0,i-1),t:(s.doc.segments[Math.max(0,i-1)]||{start:0}).start}));
+  }
+  /* position on the EDITED timeline — what the exported file would be showing */
+  editedT(t){
+    const segs=this.segs(); let n=0;
+    for(const s of segs){
+      if(t>=s.end){ n+=s.end-s.start; continue; }
+      if(t>s.start) return n+(t-s.start);
+      return n;                       // t sits in a gap or before the take
+    }
+    return n;
+  }
+  /* nearest kept position — the playhead can never rest on removed footage */
+  snapT(t){
+    const segs=this.segs();
+    if(t<=segs[0].start) return segs[0].start;
+    for(let i=0;i<segs.length;i++){
+      const s=segs[i];
+      if(t<=s.end) return Math.max(s.start,t);
+      const nx=segs[i+1];
+      if(nx) { if(t<nx.start) return (t-s.end)<(nx.start-t)?s.end:nx.start; }
+      else return s.end;
+    }
+    return segs[segs.length-1].end;
+  }
+  nextT(t){
+    const segs=this.segs();
+    const cur=segs.find(s=>t>=s.start&&t<s.end);
+    if(cur) return t;
+    const nxt=segs.find(s=>s.start>t);
+    return nxt?nxt.start:segs[0].start;
+  }
+  togglePlay(){
+    if(this.state.playing){ clearInterval(this._pt); this.setState({playing:false}); return; }
+    this._pt=setInterval(()=>this.setState(s=>({t:this.nextT(s.t+0.1)})),100);
+    this.setState(s=>({playing:true,t:this.nextT(s.t)}));
+  }
+
+  /* ── pointer helpers ─────────────────────────────────────── */
+  _tmove=(e)=>{ const d=this._t; if(!d) return;
+    const doc=this.state.doc, f=this.cl((e.clientX-d.rect.left)/d.rect.width,0,1), v=f*doc.dur;
+    const segs=[...doc.segments];
+    if(d.kind==='scrub'){ this.setState({t:this.snapT(v)}); return; }
+    if(d.kind==='start'){ segs[0]={...segs[0],start:this.cl(v,0,segs[0].end-1)}; this.setState({t:segs[0].start}); }
+    if(d.kind==='end'){ const L=segs.length-1; segs[L]={...segs[L],end:this.cl(v,segs[L].start+1,doc.dur)}; }
+    this.setState(s=>({doc:{...s.doc,segments:segs}}));
+  };
+  _tend=()=>{ this._t=null; window.removeEventListener('pointermove',this._tmove); window.removeEventListener('pointerup',this._tend); };
+  beginTime(kind,e){
+    e.preventDefault(); e.stopPropagation();
+    const el=this.stripRef.current; if(!el) return;
+    if(kind!=='scrub') this.push();
+    this._t={kind,rect:el.getBoundingClientRect()};
+    this._tmove(e);
+    window.addEventListener('pointermove',this._tmove); window.addEventListener('pointerup',this._tend);
+  }
+  _smove=(e)=>{ const d=this._s; if(!d) return;
+    const f=this.cl((e.clientX-d.rect.left)/d.rect.width,0,1);
+    this.set({[d.key]:Math.round(d.min+f*(d.max-d.min))},true);
+  };
+  _send=()=>{ this._s=null; window.removeEventListener('pointermove',this._smove); window.removeEventListener('pointerup',this._send); };
+  beginSlider(key,min,max,e){
+    e.preventDefault(); e.stopPropagation();
+    this.push();
+    this._s={key,min,max,rect:e.currentTarget.firstChild.getBoundingClientRect()};
+    this._smove(e);
+    window.addEventListener('pointermove',this._smove); window.addEventListener('pointerup',this._send);
+  }
+
+  /* ── screens ─────────────────────────────────────────────── */
+  startRec(){ clearInterval(this._rt); this.setState({screen:'recording',banner:null,recSecs:0});
+    this._rt=setInterval(()=>this.setState(s=>({recSecs:s.recSecs+1})),1000); }
+  stopRec(){ clearInterval(this._rt); this.setState({screen:'editor',banner:null}); }
+  startExport(){ clearInterval(this._et); this.setState({exportState:'running',exportPct:0});
+    this._et=setInterval(()=>this.setState(s=>{ const p=s.exportPct+3;
+      if(p>=100){ clearInterval(this._et); return {exportPct:100,exportState:'done'}; } return {exportPct:p}; }),90); }
+  go(screen,extra){ clearInterval(this._rt); clearInterval(this._et); this.setState({screen,banner:null,...(extra||{})}); }
+
+  /* ── stage measurement ───────────────────────────────────── */
+  _measure=()=>{ const el=this.stageRef.current; if(!el) return;
+    const c=getComputedStyle(el);
+    const w=el.clientWidth-parseFloat(c.paddingLeft)-parseFloat(c.paddingRight);
+    const h=el.clientHeight-parseFloat(c.paddingTop)-parseFloat(c.paddingBottom);
+    if(w<40||h<40) return;
+    const s=this.state.stage;
+    if(Math.abs(s.w-w)>0.5||Math.abs(s.h-h)>0.5) this.setState({stage:{w,h}}); };
+  _observe(){ const el=this.stageRef.current;
+    if(el===this._obsEl) return;
+    if(this._ro) this._ro.disconnect();
+    this._obsEl=el;
+    if(el&&window.ResizeObserver){ this._ro=new ResizeObserver(this._measure); this._ro.observe(el); } }
+
+  /* ── popover ─────────────────────────────────────────────── */
+  openPop(id,place,e){ e.stopPropagation();
+    if(this.state.pop&&this.state.pop.id===id){ this.closePop(); return; }
+    this._anchor=e.currentTarget; this.setState({pop:{id,place},pos:null}); }
+  closePop(){ this._anchor=null; this.setState({pop:null,pos:null}); }
+  place(){
+    const el=this.popRef.current, an=this._anchor; if(!el||!an) return;
+    const a=an.getBoundingClientRect(), r=el.getBoundingClientRect();
+    const w=r.width,h=r.height,W=window.innerWidth,H=window.innerHeight,P=12,G=11;
+    const fits={ top:a.top-G-h>=P, bottom:a.bottom+G+h<=H-P, left:a.left-G-w>=P, right:a.right+G+w<=W-P };
+    const opp={ top:'bottom', bottom:'top', left:'right', right:'left' };
+    let side=this.state.pop.place;
+    if(!fits[side]&&fits[opp[side]]) side=opp[side];
+    let x,y,arrow;
+    if(side==='top'||side==='bottom'){
+      y=side==='top'?a.top-G-h:a.bottom+G;
+      x=Math.max(P,Math.min(W-P-w,a.left+a.width/2-w/2));
+      arrow=Math.max(18,Math.min(w-18,a.left+a.width/2-x));
+    } else {
+      x=side==='left'?a.left-G-w:a.right+G;
+      y=Math.max(P,Math.min(H-P-h,a.top+a.height/2-h/2));
+      arrow=Math.max(18,Math.min(h-18,a.top+a.height/2-y));
+    }
+    const c=this.state.pos;
+    if(c&&c.x===x&&c.y===y&&c.side===side&&c.arrow===arrow) return;
+    this.setState({pos:{x,y,side,arrow}});
+  }
+
+  componentDidMount(){
+    this._raf=requestAnimationFrame(()=>{ this._observe(); this._measure(); this.forceUpdate(); });
+    this._out=(e)=>{ if(!this.state.pop) return;
+      const p=this.popRef.current;
+      if(p&&p.contains(e.target)) return;
+      if(this._anchor&&this._anchor.contains(e.target)) return;
+      this.closePop(); };
+    this._esc=(e)=>{ if(e.key==='Escape') this.closePop(); };
+    this._re=()=>{ if(this.state.pop) this.place(); };
+    window.addEventListener('pointerdown',this._out,true);
+    window.addEventListener('keydown',this._esc);
+    window.addEventListener('resize',this._re);
+    window.addEventListener('scroll',this._re,true);
+  }
+  componentDidUpdate(){ this._observe(); this._measure(); if(this.state.pop&&!this.state.pos) this.place(); }
+  componentWillUnmount(){
+    cancelAnimationFrame(this._raf); clearInterval(this._pt); clearInterval(this._rt); clearInterval(this._et);
+    if(this._ro) this._ro.disconnect();
+    window.removeEventListener('pointerdown',this._out,true);
+    window.removeEventListener('keydown',this._esc);
+    window.removeEventListener('resize',this._re);
+    window.removeEventListener('scroll',this._re,true);
+  }
+
+  renderVals(){
+    const s=this.state, d=s.doc, meta=this.LAYOUTS[d.layout];
+    const g=this.geo();
+
+    const base={padding:'7px 12px',borderRadius:'8px',fontSize:'12.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'};
+    const RAISED={background:'linear-gradient(180deg,#3b3733,#2e2b27)',border:'1px solid #47423b',boxShadow:'inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35)',color:'#c7c2ba'};
+    const LIGHT={background:'linear-gradient(180deg,#fdfcfa,#e8e4dc)',border:'1px solid #d5cfc4',boxShadow:'inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4)',color:'#16150f'};
+    const SEL={background:'linear-gradient(180deg,oklch(0.63 0.16 252 / 0.18),oklch(0.63 0.16 252 / 0.07))',border:'1px solid oklch(0.63 0.16 252)',boxShadow:'inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.35)',color:'#f2efea'};
+    const ROW={background:'linear-gradient(180deg,#2f2c28,#282521)',border:'1px solid #3a3630',boxShadow:'inset 0 1px 0 rgba(255,255,255,.04)',color:'#a6a19a'};
+    const chip=(a)=>({...base,...(a?LIGHT:RAISED)});
+    const segBtn=(a)=>({position:'relative',flex:1,padding:'7px 0',borderRadius:'7px',fontSize:'12px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',background:'transparent',border:'none',boxShadow:'none',color:a?'#f2efea':'#8d8880'});
+    const sw=(on)=>({bg:on?'linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252))':'#211f1c',knob:on?'translateX(17px)':'translateX(0)'});
+    const tool=(on)=>({padding:'6px 11px',borderRadius:'7px',fontSize:'11.5px',fontWeight:600,fontFamily:'inherit',
+      cursor:on?'pointer':'not-allowed',...(on?RAISED:{background:'#26231f',border:'1px solid #302d29',boxShadow:'none',color:'#565049'})});
+
+    const flow=[['permissions','Permissions'],['home','Home'],['setup','Setup'],['recording','Recording'],['editor','Editor'],['prefs','Preferences']];
+    const flowChips=flow.map(([k,label])=>({label,go:()=>{ if(k==='recording') this.startRec(); else this.go(k,{showExport:false}); },style:chip(s.screen===k&&!s.showExport)}));
+    flowChips.push({label:'Export',go:()=>this.go('editor',{showExport:true,exportState:'idle',exportPct:0}),style:chip(s.showExport)});
+    const st=[
+      ['No phone','setup',{phoneConnected:false,banner:'nophone'}],
+      ['Permission denied','permissions',{perm:'denied'}],
+      ['Low disk','setup',{phoneConnected:true,banner:'lowdisk'}],
+      ['Disconnected','recording',{banner:'disconnected',recSecs:79}],
+      ['Export failed','editor',{showExport:true,exportState:'failed'}]
+    ];
+    const stateChips=st.map(([label,scr,extra])=>({label,style:chip(false),go:()=>{
+      clearInterval(this._rt); clearInterval(this._et);
+      this.setState({screen:scr,banner:null,phoneConnected:true,perm:'pending',showExport:false,...extra}); }}));
+
+    const presetList=Object.keys(this.LAYOUTS).map(k=>({...this.THUMB[k],label:this.LAYOUTS[k].label,
+      go:()=>{ const r=this.LAYOUTS[k].ratio||d.ratio; this.set({layout:k,ratio:r,swap:false}); this.setState({section:'layout'}); },
+      style:{padding:'9px',borderRadius:'10px',cursor:'pointer',fontFamily:'inherit',textAlign:'left',...(d.layout===k?SEL:ROW)}}));
+
+    const RATIOS=['16:9','9:16','1:1','custom'];
+    const ratioList=RATIOS.map(r=>({label:r==='custom'?'Custom':r,go:()=>this.set({ratio:r}),style:segBtn(d.ratio===r),segStyle:segBtn(d.ratio===r)}));
+    const tile=(bg,on,h)=>({height:(h||34)+'px',borderRadius:'8px',cursor:'pointer',padding:'6px 8px',display:'flex',alignItems:'flex-end',background:bg,
+      transition:'box-shadow .2s ease',border:'1px solid #3d3833',
+      boxShadow:on?'0 0 0 2px #201e1c,0 0 0 4px #f2efea,0 1px 3px rgba(0,0,0,.4)':'inset 0 1px 0 rgba(255,255,255,.22)'});
+    const gradients=this.GRADS.map((c,i)=>({go:()=>this.set({grad:i,bgKind:'gradient'}),style:tile(c,d.bgKind==='gradient'&&d.grad===i)}));
+    const patterns=this.PATS.map((p,i)=>({label:p.label,go:()=>this.set({pat:i,bgKind:'pattern'}),style:tile(p.css,d.bgKind==='pattern'&&d.pat===i,46)}));
+    const bgKinds=[['solid','Solid'],['gradient','Gradient'],['pattern','Pattern'],['image','Image']]
+      .map(([k,label])=>({label,go:()=>this.set({bgKind:k}),style:segBtn(d.bgKind===k)}));
+    const fits=[['cover','Cover'],['contain','Contain']].map(([k,label])=>({label,go:()=>this.set({fit:k}),style:segBtn(d.fit===k)}));
+    const step=(key,delta,lo,hi)=>()=>this.set({[key]:this.cl(d[key]+delta,lo,hi)});
+    const sizeSeg=(key)=>['S','M','L'].map(v=>({label:{S:'Small',M:'Medium',L:'Large'}[v],go:()=>this.set({[key]:v}),style:segBtn(d[key]===v)}));
+    const shapeList=[['circle','Circle'],['rect','Rounded']].map(([k,label])=>({label,go:()=>this.set({camShape:k}),style:segBtn(d.camShape===k)}));
+    const anchors=[['tl',6,8],['tr',68,8],['bl',6,52],['br',68,52]].map(([k,dx,dy])=>({dx,dy,
+      go:()=>this.set({camAnchor:k}), dot:d.camAnchor===k?'oklch(0.68 0.15 252)':'#57514a',
+      style:{padding:'6px',borderRadius:'8px',cursor:'pointer',fontFamily:'inherit',...(d.camAnchor===k?SEL:ROW)}}));
+    const swatches=['#F4F2EC','#E8E2D6','#1C1B19','#2F4C46','#D9CFC2','#C4D4E0'].map(c=>({
+      go:()=>this.set({bg:c}),
+      style:{width:'38px',height:'38px',borderRadius:'10px',cursor:'pointer',background:c,padding:0,border:'1px solid #3d3833',
+        boxShadow:d.bg===c?'0 0 0 2px #201e1c,0 0 0 4px #f2efea,0 1px 3px rgba(0,0,0,.4)':'inset 0 1px 0 rgba(255,255,255,.25)'}}));
+
+    const exportCards=['16:9','9:16','1:1'].map(r=>{
+      const a=this.A(r), H=r==='9:16'?128:(r==='1:1'?110:78), cw=Math.round(H*a), ch=H;
+      const save=d.ratio; this.state.doc.ratio=r; const c=this.compose(); this.state.doc.ratio=save;
+      const act=s.exportRatio===r;
+      const phH=c.phone.h*ch;
+      return { label:r, res:{'16:9':'1920 × 1080','9:16':'1080 × 1920','1:1':'1080 × 1080'}[r],
+        go:()=>this.setState({exportRatio:r}), bg:this.bgCss(), cw, ch,
+        phL:Math.round(c.phone.x*cw), phT:Math.round(c.phone.y*ch), phW:Math.round(phH*(390/844)), phH:Math.round(phH),
+        pr:Math.max(2,Math.round(phH*0.08)), hasCam:!!c.cam,
+        camL:c.cam?Math.round(c.cam.x*cw):0, camT:c.cam?Math.round(c.cam.y*ch):0,
+        camW:c.cam?Math.round(c.cam.w*cw):0, camH:c.cam?Math.round(c.cam.h*ch):0,
+        camR:c.cam?(d.camShape==='circle'&&meta.cam==='bubble'?Math.round(c.cam.w*cw/2):Math.round(c.cam.w*cw*0.08)):0,
+        style:{padding:'12px 10px 14px',borderRadius:'11px',cursor:'pointer',fontFamily:'inherit',textAlign:'center',...(act?SEL:ROW),color:act?'#f2efea':'#c7c2ba'}};
+    });
+
+    const prefTabs=['General','Devices','Recording','Export'].map(t=>({label:t,go:()=>this.setState({prefTab:t}),
+      style:{padding:'7px 15px',borderRadius:'8px',fontSize:'12.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',
+        ...(s.prefTab===t?LIGHT:{background:'transparent',border:'1px solid transparent',boxShadow:'none',color:'#8d8880'})}}));
+    const row=(label,value,hint)=>({label,value,hint:hint||'',hasHint:!!hint});
+    const prefGroups=[
+      {title:'Defaults',rows:[row('Camera','FaceTime HD Camera'),row('Microphone','Shure MV7'),row('Aspect ratio','16:9'),row('Layout preset','Picture in picture')]},
+      {title:'Recording',rows:[row('Quality','High — 60 fps','Higher quality uses more disk while recording.'),row('Save recordings to','~/Movies/ReelDock'),row('Hardware acceleration','On','Uses VideoToolbox for encoding and export.')]}
+    ];
+
+    const W=(this.stripRef.current&&this.stripRef.current.clientWidth)||1;
+    const px=(v)=>Math.round(v/d.dur*W);
+    const segs=d.segments;
+    const cuts=[];
+    if(segs[0].start>0) cuts.push({l:0,w:px(segs[0].start)});
+    for(let i=1;i<segs.length;i++) if(segs[i].start>segs[i-1].end) cuts.push({l:px(segs[i-1].end),w:px(segs[i].start-segs[i-1].end)});
+    if(segs[segs.length-1].end<d.dur) cuts.push({l:px(segs[segs.length-1].end),w:px(d.dur-segs[segs.length-1].end)});
+    const segList=segs.map((sg,i)=>({ go:(e)=>{ e.stopPropagation(); this.setState({selSeg:i,t:Math.max(sg.start,Math.min(sg.end,s.t))}); },
+      style:{position:'absolute',top:0,bottom:0,left:px(sg.start)+'px',width:Math.max(2,px(sg.end-sg.start))+'px',
+        borderRadius:'4px',cursor:'pointer',zIndex:2,
+        border:s.selSeg===i?'1.5px solid oklch(0.70 0.15 252)':'1px solid rgba(255,255,255,.07)',
+        background:s.selSeg===i?'oklch(0.63 0.16 252 / 0.10)':'transparent'}}));
+
+    const proj={ layout:d.layout, phoneSize:d.phoneSize.toLowerCase()==='s'?'small':(d.phoneSize==='M'?'medium':'large'),
+      camera:{ visible:d.camOn, shape:d.camShape==='rect'?'rounded-rectangle':'circle',
+        size:d.camSize==='S'?'small':(d.camSize==='M'?'medium':'large'), position:{tl:'top-left',tr:'top-right',bl:'bottom-left',br:'bottom-right'}[d.camAnchor] },
+      canvas:{ aspectRatio:d.ratio==='custom'?(d.cw+'×'+d.chh):d.ratio, background:{type:d.bgKind,value:this.bgCss()}, padding:d.pad },
+      segments:segs.map(x=>({start:Math.round(x.start*10)/10,end:Math.round(x.end*10)/10})) };
+
+    return {
+      g, stageRef:this.stageRef, stripRef:this.stripRef,
+      winTitle:s.screen==='prefs'?'Preferences':(s.screen==='editor'?'Elorah — Reading Plan':'ReelDock'),
+      isPerm:s.screen==='permissions', isHome:s.screen==='home', isSetup:s.screen==='setup',
+      isRec:s.screen==='recording', isEditor:s.screen==='editor', isPrefs:s.screen==='prefs',
+      flowChips, stateChips, presetList, ratioList, shapeList, swatches, exportCards, prefTabs, prefGroups, anchors,
+      phoneSizes:sizeSeg('phoneSize'), camSizes:sizeSeg('camSize'),
+      ratioI:RATIOS.indexOf(d.ratio), shapeI:d.camShape==='circle'?0:1,
+      gradients, patterns, bgKinds, fits,
+      bgKindI:['solid','gradient','pattern','image'].indexOf(d.bgKind), fitI:d.fit==='cover'?0:1,
+      bgIsSolid:d.bgKind==='solid', bgIsGradient:d.bgKind==='gradient',
+      bgIsPattern:d.bgKind==='pattern', bgIsImage:d.bgKind==='image',
+      isCustomRatio:d.ratio==='custom', isFixedRatio:d.ratio!=='custom',
+      outRes:{'16:9':'1920 × 1080','9:16':'1080 × 1920','1:1':'1080 × 1080'}[d.ratio]||'',
+      cwVal:d.cw, chVal:d.chh,
+      cwInc:step('cw',80,480,3840), cwDec:step('cw',-80,480,3840),
+      chInc:step('chh',80,480,3840), chDec:step('chh',-80,480,3840),
+      phoneSizeI:this.SIZES[d.phoneSize], camSizeI:this.SIZES[d.camSize],
+      showAnchors:meta.anchors&&d.camOn, showSwap:meta.swap, showGap:meta.gap, showShape:meta.cam==='bubble',
+      secLayout:s.section==='layout', secPhone:s.section==='phone', secCamera:s.section==='camera',
+      secCanvas:s.section==='canvas', secAudio:s.section==='audio',
+      secTitle:{layout:'Layout',canvas:'Canvas',phone:'Phone',camera:'Camera',audio:'Audio'}[s.section],
+      secHint:{ layout:'Where the phone and camera sit on the canvas.',
+        phone:'How the recorded device is drawn.',
+        camera:meta.cam==='pane'?'The camera fills its own pane in this layout.':'Shape, size and corner for the camera bubble.',
+        canvas:'Size, ratio and what sits behind everything.',
+        audio:'Levels for the microphone and phone tracks.' }[s.section],
+      sections:[['layout','Layout'],['canvas','Canvas'],['phone','Phone'],['camera','Camera'],['audio','Audio']].map(([k,label])=>{
+        const on=s.section===k;
+        return { label, go:()=>this.setState({section:k}),
+          isLayout:k==='layout', isCanvas:k==='canvas', isPhone:k==='phone', isCamera:k==='camera', isAudio:k==='audio',
+          style:{width:'54px',padding:'9px 3px 8px',borderRadius:'11px',cursor:'pointer',fontFamily:'inherit',
+            transition:'background .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease',
+            ...(on?{background:'linear-gradient(180deg,oklch(0.63 0.16 252 / 0.22),oklch(0.63 0.16 252 / 0.08))',border:'1px solid oklch(0.63 0.16 252)',boxShadow:'inset 0 1px 0 rgba(255,255,255,.09),0 1px 3px rgba(0,0,0,.35)',color:'#eaf0fb'}
+                :{background:'transparent',border:'1px solid transparent',boxShadow:'none',color:'#8d8880'})} };
+      }),
+
+      permDenied:s.perm==='denied', permPending:s.perm==='pending', permGranted:s.perm==='granted', notGranted:s.perm!=='granted',
+      grantAll:()=>this.setState({perm:'granted'}),
+      goHome:()=>this.go('home'), goSetup:()=>this.go('setup'), goEditor:()=>this.go('editor'),
+      recents:[
+        {name:'Reading plan walkthrough',meta:'Yesterday · 16:9',dur:'1:04'},
+        {name:'Streaks — feature drop',meta:'24 Jul · 9:16',dur:'0:38'},
+        {name:'Onboarding, take 3',meta:'22 Jul · 16:9',dur:'2:17'},
+        {name:'App Store preview',meta:'19 Jul · 9:16',dur:'0:28'}
+      ],
+      elorahRows:[{n:'1',t:'Proverbs 3',s:'4 min read'},{n:'2',t:'Psalm 27',s:'3 min read'},{n:'3',t:'Reflection',s:'Write a note'}],
+      elorahTabs:['Today','Plans','Notes','You'],
+      bg:this.bgCss(), camOn:d.camOn, frameOn:d.frame,
+      phoneOn:s.phoneConnected, phoneOff:!s.phoneConnected,
+      bannerNoPhone:s.banner==='nophone', bannerLowDisk:s.banner==='lowdisk', bannerDisconnected:s.banner==='disconnected',
+      dismissBanner:()=>this.setState({banner:null}),
+      reconnect:()=>this.setState({banner:null,phoneConnected:true}),
+      phoneLabel:s.phoneConnected?'iPhone 15 Pro · USB':'Not connected',
+      phoneDotColor:s.phoneConnected?'oklch(0.68 0.14 155)':'oklch(0.72 0.15 75)',
+      setupStatus:s.phoneConnected?'3 sources ready · saves to ~/Movies/ReelDock':'Waiting for a phone',
+      checklist:['End Live Activities and timers so the Dynamic Island stays clear.','Turn on Do Not Disturb.','Check the preview above — that is exactly what gets recorded.'],
+      startRec:()=>this.startRec(), stopRec:()=>this.stopRec(),
+      recTime:this.fmt2(s.recSecs), recBadge:s.banner==='disconnected'?'Camera + mic':'Recording',
+      sourceChips:[
+        {label:'Phone',color:s.banner==='disconnected'?'oklch(0.62 0.18 26)':'oklch(0.68 0.14 155)'},
+        {label:'Camera',color:d.camOn?'oklch(0.68 0.14 155)':'#5c5852'},
+        {label:'Microphone',color:'oklch(0.68 0.14 155)'}
+      ],
+
+      toggleCam:()=>this.set({camOn:!d.camOn}), camToggleBg:sw(d.camOn).bg, camToggleKnob:sw(d.camOn).knob,
+      toggleFrame:()=>this.set({frame:!d.frame}), frameToggleBg:sw(d.frame).bg, frameToggleKnob:sw(d.frame).knob,
+      toggleShadow:()=>this.set({shadow:!d.shadow}), shadowToggleBg:sw(d.shadow).bg, shadowToggleKnob:sw(d.shadow).knob,
+      toggleSwap:()=>this.set({swap:!d.swap}), swapToggleBg:sw(d.swap).bg, swapToggleKnob:sw(d.swap).knob,
+      toggleMirror:()=>this.set({mirror:!d.mirror}), mirrorToggleBg:sw(d.mirror).bg, mirrorToggleKnob:sw(d.mirror).knob,
+      toggleMute:()=>this.set({muted:!d.muted}), muteToggleBg:sw(d.muted).bg, muteToggleKnob:sw(d.muted).knob,
+
+      radius:d.radius+'%', radiusPct:d.radius,
+      zoom:d.zoom+'%', zoomPct:Math.round((d.zoom-100)/1.5),
+      crop:d.crop+'%', cropPct:d.crop,
+      pad:d.pad+'%', padPct:Math.round(d.pad/14*100),
+      gap:d.gap+'%', gapPct:Math.round(d.gap/14*100),
+      mic:d.muted?'Muted':d.mic+'%', micPct:d.muted?0:d.mic,
+      phoneVol:d.phoneVol+'%', phoneVolPct:d.phoneVol,
+      slideRadius:(e)=>this.beginSlider('radius',0,60,e),
+      slideZoom:(e)=>this.beginSlider('zoom',100,250,e),
+      slideCrop:(e)=>this.beginSlider('crop',0,100,e),
+      slidePad:(e)=>this.beginSlider('pad',0,14,e),
+      slideGap:(e)=>this.beginSlider('gap',0,14,e),
+      slideMic:(e)=>this.beginSlider('mic',0,100,e),
+      slidePhoneVol:(e)=>this.beginSlider('phoneVol',0,100,e),
+
+      wave:this.wave, filmstrip:this.film, cuts, segs:segList,
+      playGlyph:s.playing?'❙❙':'▶', togglePlay:()=>this.togglePlay(),
+      tStr:this.fmt2(this.editedT(s.t)), keepStr:this.fmt2(this.kept()),
+      cutSummary:(()=>{
+        if(segs.length>1) return (segs.length-1)+' cut'+(segs.length>2?'s':'')+' · '+this.fmt2(d.dur-this.kept())+' removed';
+        return (segs[0].start>0||segs[0].end<d.dur)?'Trimmed from '+this.fmt2(d.dur):'Full take'; })(),
+      savedLabel:s.past.length?'Edited · saved':'Saved',
+      tools:[
+        {label:'Split',go:()=>this.split(),style:tool(true)},
+        {label:'Delete',go:()=>this.removeSeg(),style:tool(segs.length>1)},
+        {label:'Undo',go:()=>this.undo(),style:tool(s.past.length>0)},
+        {label:'Redo',go:()=>this.redo(),style:tool(s.future.length>0)}
+      ],
+      playheadL:px(s.t), trimStartHandleL:px(segs[0].start)-7, trimEndHandleL:px(segs[segs.length-1].end)-7,
+      ruler:['0:00','0:16','0:32','0:48','1:04'],
+      scrubDown:(e)=>this.beginTime('scrub',e),
+      dragTrimStart:(e)=>this.beginTime('start',e),
+      dragTrimEnd:(e)=>this.beginTime('end',e),
+
+      showExport:s.showExport,
+      openExport:()=>this.setState({showExport:true,exportState:'idle',exportPct:0}),
+      closeExport:()=>{ clearInterval(this._et); this.setState({showExport:false,exportState:'idle',exportPct:0}); },
+      startExport:()=>this.startExport(),
+      exportIdle:s.exportState==='idle', exportRunning:s.exportState==='running',
+      exportDone:s.exportState==='done', exportFailed:s.exportState==='failed', exportPct:s.exportPct,
+      exportStage:s.exportPct<35?'Reading phone and camera tracks':(s.exportPct<75?'Compositing layout and background':'Mixing audio and writing MP4'),
+
+      popOpen:!!s.pop, popRef:this.popRef, closePop:()=>this.closePop(),
+      popIsMenu:!!s.pop&&s.pop.id==='menu', popIsAudio:!!s.pop&&s.pop.id==='audio', popIsJson:!!s.pop&&s.pop.id==='json',
+      openMenu:(e)=>this.openPop('menu','bottom',e),
+      openAudioInfo:(e)=>this.openPop('audio','left',e),
+      openJson:(e)=>this.openPop('json','left',e),
+      projectJson:JSON.stringify(proj,null,2),
+      moreStyle:{width:'30px',height:'30px',borderRadius:'8px',cursor:'pointer',fontSize:'13px',fontFamily:'inherit',
+        display:'flex',alignItems:'center',justifyContent:'center',
+        ...(s.pop&&s.pop.id==='menu'?{...RAISED,color:'#f2efea',background:'#211f1c',boxShadow:'inset 0 1px 3px rgba(0,0,0,.45)'}:RAISED)},
+      menuItems:[
+        {label:'Duplicate project',key:'⌘D',danger:false},
+        {label:'Save layout as preset',key:'⇧⌘S',danger:false},
+        {label:'Reveal recording in Finder',key:'',danger:false},
+        {label:'Delete project',key:'⌫',danger:true}
+      ].map(m=>({...m,style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'24px',width:'100%',
+        padding:'7px 10px',borderRadius:'7px',fontSize:'12.5px',fontWeight:500,cursor:'pointer',fontFamily:'inherit',
+        background:'transparent',border:'1px solid transparent',boxShadow:'none',textAlign:'left',
+        color:m.danger?'oklch(0.68 0.16 26)':'#dedad3'}})),
+      popStyle:{position:'fixed',zIndex:90,left:(s.pos?s.pos.x:-9999)+'px',top:(s.pos?s.pos.y:-9999)+'px',
+        opacity:s.pos?1:0,transform:s.pos?'scale(1)':'scale(.96)',
+        transformOrigin:s.pos?({top:'bottom center',bottom:'top center',left:'right center',right:'left center'})[s.pos.side]:'center',
+        transition:'opacity .14s ease, transform .18s cubic-bezier(.32,.72,0,1)',
+        background:'linear-gradient(180deg,#2f2c28,#262320)',border:'1px solid #45403a',borderRadius:'12px',
+        boxShadow:'0 18px 44px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)'},
+      arrowStyle:(()=>{ const p=s.pos; if(!p) return {display:'none'};
+        const B='1px solid #45403a', k=p.arrow-6;
+        const per={ top:{left:k+'px',bottom:'-6px',borderRight:B,borderBottom:B,background:'#262320'},
+                    bottom:{left:k+'px',top:'-6px',borderLeft:B,borderTop:B,background:'#2f2c28'},
+                    left:{top:k+'px',right:'-6px',borderTop:B,borderRight:B,background:'#2a2724'},
+                    right:{top:k+'px',left:'-6px',borderBottom:B,borderLeft:B,background:'#2a2724'} }[p.side];
+        return {position:'absolute',width:'12px',height:'12px',transform:'rotate(45deg)',borderRadius:'2px',...per}; })()
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -17,8 +17,6 @@ type SliderProps = {
   className?: string;
 };
 
-/* Track recessed, fill and knob raised. The whole 24px row is the drag target,
-   not just the 6px track. */
 export function Slider({
   label,
   value,
@@ -99,7 +97,6 @@ export function Slider({
   );
 }
 
-/** Live input level. The width keyframes stand in for a real audio tap. */
 export function Meter({ className }: { className?: string }) {
   return (
     <div

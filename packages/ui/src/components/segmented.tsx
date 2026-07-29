@@ -12,10 +12,6 @@ type SegmentedProps = {
   className?: string;
 };
 
-/*
-  Segments are equal width, so the thumb is pure calc(): the 3px padding on each
-  side is subtracted once, then divided by the segment count.
-*/
 export function Segmented({
   options,
   value,

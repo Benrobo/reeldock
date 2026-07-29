@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for the main ReelDock window",
+  "windows": ["main", "reeldock-devtools"],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-create-webview-window",
+    "macos-permissions:default",
+    "sql:default",
+    "sql:allow-execute"
+  ]
+}

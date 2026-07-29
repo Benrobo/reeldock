@@ -43,12 +43,6 @@ type PopoverProps = {
   className?: string;
 };
 
-/*
-  Placement resolves in three steps: flip to the opposite side when the
-  preferred one doesn't fit, then shift along the cross axis to stay inside the
-  viewport, then clamp the arrow short of the popover's rounded corners so it
-  keeps pointing at its anchor. It re-solves on scroll and resize.
-*/
 export function Popover({ children, content, side = "bottom", className }: PopoverProps) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);

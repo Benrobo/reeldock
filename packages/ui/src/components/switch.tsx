@@ -9,8 +9,6 @@ type SwitchProps = {
   className?: string;
 };
 
-/* 44x26 recessed track, 20px raised knob. The knob moves on transform and the
-   track cross-fades, both over 240ms. */
 export function Switch({
   checked,
   defaultChecked = false,

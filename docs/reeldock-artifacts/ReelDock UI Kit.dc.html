@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  html,body{margin:0;padding:0;background:#131211;-webkit-font-smoothing:antialiased;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,sans-serif;}
+  a{color:oklch(0.63 0.16 252);text-decoration:none;}
+  a:hover{color:oklch(0.72 0.14 252);}
+  button{font-family:inherit;-webkit-tap-highlight-color:transparent;transition:transform .26s cubic-bezier(.34,1.56,.64,1),filter .16s ease,background .18s ease,border-color .18s ease,color .18s ease;}
+  button:active{transform:scale(.962);filter:brightness(.95);box-shadow:inset 0 1px 3px rgba(0,0,0,.22)!important;transition-duration:.07s;transition-timing-function:ease-out;}
+  @keyframes rdmeter{0%{width:32%}22%{width:71%}44%{width:48%}66%{width:83%}88%{width:39%}100%{width:32%}}
+  @keyframes rdpulse{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:44px 44px 80px;display:flex;flex-direction:column;align-items:center;gap:26px;background:#131211;color:#f2efea;">
+
+  <div style="width:1240px;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#736f69;">ReelDock &middot; UI primitives</div>
+    <div style="font-size:26px;font-weight:600;letter-spacing:-.022em;margin-top:7px;">Soft flat controls</div>
+    <div style="font-size:13.5px;color:#a6a19a;margin-top:6px;max-width:660px;line-height:1.55;text-wrap:pretty;">One recipe underneath everything: a 1px border, a top-to-bottom gradient of about 8% lightness, a hairline highlight along the top edge, and a 1&ndash;2px drop shadow. Raised things gradient down and cast a shadow; recessed things &mdash; tracks, wells, fields &mdash; invert both. Everything here is live: press it.</div>
+  </div>
+
+  <div style="width:1240px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;align-items:start;">
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Buttons</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px;">
+        <button style="display:flex;align-items:center;gap:8px;padding:9px 17px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,#ffffff,#f1eee8);">Export</button>
+        <button style="display:flex;align-items:center;gap:8px;padding:9px 17px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#f2efea;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,#454039,#37332e);">Look again</button>
+        <button style="display:flex;align-items:center;gap:8px;padding:9px 17px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));border:1px solid oklch(0.48 0.14 252);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.4);color:#fff;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,oklch(0.72 0.15 252),oklch(0.62 0.16 252));">Allow</button>
+        <button style="display:flex;align-items:center;gap:9px;padding:9px 17px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,oklch(0.66 0.18 26),oklch(0.56 0.19 26));border:1px solid oklch(0.46 0.16 26);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 1px 3px rgba(0,0,0,.4);color:#fff;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,oklch(0.70 0.18 26),oklch(0.60 0.19 26));"><span style="width:9px;height:9px;border-radius:50%;background:#fff;display:block;box-shadow:0 0 0 3px rgba(255,255,255,.18);"></span>Record</button>
+        <button style="padding:9px 15px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;border:1px solid transparent;color:#a6a19a;transition:transform .1s cubic-bezier(.32,.72,0,1),background .18s ease,color .18s ease;" style-hover="background:rgba(255,255,255,.055);color:#f2efea;">Cancel</button>
+        <button style="padding:9px 17px;border-radius:9px;font-size:13px;font-weight:600;cursor:not-allowed;background:#2a2724;border:1px solid #35312c;color:#5f5b55;">Record</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;">
+        <button style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#f2efea;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,#454039,#37332e);">Small</button>
+        <button style="padding:4px 10px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#f2efea;">Mini</button>
+        <div style="display:flex;">
+          <button style="padding:9px 15px;border-radius:9px 0 0 9px;font-size:13px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));border:1px solid oklch(0.48 0.14 252);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.4);color:#fff;">New recording</button>
+          <button style="padding:9px 10px;border-radius:0 9px 9px 0;font-size:11px;cursor:pointer;background:linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252));border:1px solid oklch(0.48 0.14 252);border-left:1px solid rgba(0,0,0,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.4);color:#fff;">&#9662;</button>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;font-size:12px;display:flex;align-items:center;justify-content:center;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,#454039,#37332e);">&#9664;</button>
+          <button style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#c7c2ba;font-size:12px;display:flex;align-items:center;justify-content:center;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,#454039,#37332e);">&#9654;</button>
+        </div>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:18px;line-height:1.7;">press: translateY(1.5px) + inset 0 2px 5px, 100ms<br />the surface darkens as it sinks &mdash; light travels down with it</div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Segmented</div>
+      <div style="display:flex;flex-direction:column;gap:15px;margin-top:18px;">
+        <div style="position:relative;display:flex;gap:0;padding:3px;border-radius:9px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);width:260px;">
+          <div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 3);left:calc(3px + (100% - 6px) * {{ ratioI }} / 3);"></div>
+          <sc-for list="{{ ratios }}" as="r" hint-placeholder-count="3">
+            <button onClick="{{ r.go }}" style="position:relative;flex:1;padding:7px 0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;border:none;transition:color .2s ease;color:{{ r.color }};">{{ r.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="position:relative;display:flex;padding:3px;border-radius:10px;background:#211f1c;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);">
+          <div style="position:absolute;top:3px;bottom:3px;border-radius:7px;background:linear-gradient(180deg,#403c37,#33302b);border:1px solid #4a453e;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.3);transition:left .26s cubic-bezier(.32,.72,0,1);width:calc((100% - 6px) / 2);left:calc(3px + (100% - 6px) * {{ shapeI }} / 2);"></div>
+          <sc-for list="{{ shapes }}" as="r" hint-placeholder-count="2">
+            <button onClick="{{ r.go }}" style="position:relative;flex:1;padding:8px 0;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;border:none;transition:color .2s ease;color:{{ r.color }};">{{ r.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;gap:4px;">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+            <button onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:18px;line-height:1.7;">the thumb slides &mdash; left transitions over 260ms<br />equal-width segments, so the thumb is pure calc()</div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Switches</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:18px;">
+        <sc-for list="{{ switches }}" as="s" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:13px;font-weight:500;">{{ s.label }}</div>
+              <div style="font-size:11.5px;color:#736f69;margin-top:2px;">{{ s.hint }}</div>
+            </div>
+            <button onClick="{{ s.go }}" style="position:relative;width:44px;height:26px;border-radius:13px;padding:0;cursor:pointer;border:1px solid rgba(0,0,0,.4);box-shadow:inset 0 1px 3px rgba(0,0,0,.45);transition:background .24s cubic-bezier(.32,.72,0,1);background:{{ s.track }};">
+              <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:linear-gradient(180deg,#ffffff,#e9e6e0);box-shadow:0 1px 3px rgba(0,0,0,.5),0 0 0 .5px rgba(0,0,0,.18);display:block;transition:transform .24s cubic-bezier(.32,.72,0,1);transform:{{ s.knob }};"></span>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:20px;line-height:1.7;">44&times;26 track, recessed &middot; 20px raised knob<br />knob moves on transform, track cross-fades, both 240ms</div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Sliders</div>
+      <div style="margin-top:18px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:9px;"><span style="font-size:12.5px;color:#a6a19a;">Microphone</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ micVol }}%</span></div>
+        <div onPointerDown="{{ slideMic }}" style="height:24px;display:flex;align-items:center;cursor:pointer;">
+          <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+            <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.74 0.14 155),oklch(0.64 0.15 155));width:{{ micVol }}%;"></div>
+            <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);transition:box-shadow .16s ease;left:{{ micVol }}%;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:20px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:9px;"><span style="font-size:12.5px;color:#a6a19a;">Corner radius</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;color:#e7e3dd;">{{ radius }}%</span></div>
+        <div onPointerDown="{{ slideRadius }}" style="height:24px;display:flex;align-items:center;cursor:pointer;">
+          <div style="position:relative;width:100%;height:6px;border-radius:3px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);">
+            <div style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(180deg,oklch(0.70 0.15 252),oklch(0.60 0.16 252));width:{{ radius }}%;"></div>
+            <div style="position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-left:-8px;border-radius:50%;background:linear-gradient(180deg,#fff,#e6e2dc);border:1px solid #b9b4ac;box-shadow:0 1px 3px rgba(0,0,0,.5);left:{{ radius }}%;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:22px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#736f69;margin-bottom:9px;">Input meter</div>
+        <div style="height:7px;border-radius:4px;box-sizing:border-box;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 2px rgba(0,0,0,.5);overflow:hidden;"><div style="height:100%;background:linear-gradient(90deg,oklch(0.68 0.14 155),oklch(0.74 0.13 140));animation:rdmeter 2.4s ease-in-out infinite;"></div></div>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:20px;line-height:1.7;">track recessed, fill and knob raised &middot; drag anywhere on the row</div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Pills &amp; status</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:18px;">
+        <span style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:8px;background:oklch(0.62 0.18 26 / 0.16);border:1px solid oklch(0.62 0.18 26 / 0.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);"><span style="width:8px;height:8px;border-radius:50%;background:oklch(0.62 0.18 26);animation:rdpulse 1.6s ease-in-out infinite;display:block;"></span><span style="font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#f0d9d3;">Recording</span></span>
+        <span style="display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:8px;background:oklch(0.68 0.14 155 / 0.14);border:1px solid oklch(0.68 0.14 155 / 0.36);"><span style="width:6px;height:6px;border-radius:50%;background:oklch(0.68 0.14 155);display:block;"></span><span style="font-size:12px;font-weight:600;color:#cfe3d6;">Ready</span></span>
+        <span style="display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:8px;background:oklch(0.72 0.15 75 / 0.14);border:1px solid oklch(0.72 0.15 75 / 0.36);"><span style="width:6px;height:6px;border-radius:50%;background:oklch(0.72 0.15 75);display:block;"></span><span style="font-size:12px;font-weight:600;color:#e8dcc6;">Low disk</span></span>
+        <span style="display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:8px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);"><span style="width:6px;height:6px;border-radius:50%;background:#6b665f;display:block;"></span><span style="font-size:12px;font-weight:500;color:#a6a19a;">Camera off</span></span>
+        <span style="padding:3px 8px;border-radius:6px;background:#332f2b;border:1px solid #403b35;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#c7c2ba;">USB</span>
+        <span style="padding:3px 9px;border-radius:99px;background:oklch(0.63 0.16 252 / 0.18);border:1px solid oklch(0.63 0.16 252 / 0.4);font-size:11px;font-weight:600;color:#cfdcf5;">Beta</span>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:18px;line-height:1.7;">tint at 14&ndash;16% &middot; border same hue at 36&ndash;42%<br />dot always the full-strength hue &middot; radius 8</div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Selection cards</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px;">
+        <sc-for list="{{ cards }}" as="c" hint-placeholder-count="2">
+          <button onClick="{{ c.go }}" style="{{ c.style }}">
+            <span style="display:block;position:relative;width:100%;aspect-ratio:16/9;border-radius:6px;background:#1b1917;box-shadow:inset 0 1px 3px rgba(0,0,0,.5);overflow:hidden;">
+              <span style="position:absolute;background:#6d675f;border-radius:2px;left:{{ c.px }}%;top:{{ c.py }}%;width:{{ c.pw }}%;height:{{ c.ph }}%;display:block;"></span>
+              <span style="position:absolute;background:#4b4640;left:{{ c.cx }}%;top:{{ c.cy }}%;width:{{ c.cw }}%;height:{{ c.ch }}%;border-radius:{{ c.cr }}px;display:block;"></span>
+            </span>
+            <span style="display:block;font-size:11.5px;font-weight:600;margin-top:8px;text-align:left;">{{ c.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:9px;margin-top:16px;">
+        <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="5">
+          <button onClick="{{ s.go }}" style="{{ s.style }}"></button>
+        </sc-for>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:18px;line-height:1.7;">selected = accent border + 18%&rarr;7% gradient wash<br />swatch selection is a double ring, never a border swap</div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Fields</div>
+      <div style="display:flex;flex-direction:column;gap:11px;margin-top:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span style="font-size:12.5px;color:#a6a19a;">Camera</span>
+          <button style="display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35);color:#f2efea;transition:background .18s ease;" style-hover="background:linear-gradient(180deg,#454039,#37332e);">FaceTime HD Camera<span style="color:#8d8880;font-size:10px;">&#9662;</span></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);">
+          <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:#c7c2ba;flex:1;">~/Movies/ReelDock</span>
+          <button style="padding:4px 10px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;box-shadow:inset 0 1px 0 rgba(255,255,255,.07);color:#f2efea;">Choose</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:#1b1917;border:1px solid oklch(0.63 0.16 252);box-shadow:inset 0 1px 3px rgba(0,0,0,.45),0 0 0 3px oklch(0.63 0.16 252 / 0.22);">
+          <span style="font-size:12.5px;color:#f2efea;flex:1;">elorah-reading-plan</span>
+          <span style="font-size:11.5px;color:#736f69;">focused</span>
+        </div>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:18px;line-height:1.7;">wells invert the recipe: #1b1917 + inset shadow<br />focus adds a 3px ring at 22% accent</div>
+    </div>
+
+    <div style="background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Surfaces</div>
+      <div style="margin-top:18px;display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:linear-gradient(180deg,#2f2c28,#282521);border:1px solid #3a3630;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);">
+          <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.68 0.14 155);"></span>
+          <div style="flex:1;"><div style="font-size:12.5px;font-weight:600;">Phone</div><div style="font-size:11.5px;color:#8d8880;margin-top:1px;">iPhone 15 Pro &middot; USB</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:oklch(0.72 0.15 75 / 0.12);border:1px solid oklch(0.72 0.15 75 / 0.32);">
+          <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.72 0.15 75);"></span>
+          <span style="font-size:12.5px;color:#efe7dc;flex:1;">No iPhone found.</span>
+          <button style="padding:5px 11px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #4d473f;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);color:#f2efea;">Look again</button>
+        </div>
+        <div style="padding:13px 15px;border-radius:10px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);font-size:12px;color:#8d8880;line-height:1.5;">Recessed well &mdash; for read-only detail and checklists.</div>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:18px;line-height:1.7;">panel #24221f &middot; row gradient #2f2c28&rarr;#282521<br />banners tint the whole row, no left accent bar</div>
+    </div>
+
+    <div style="grid-column:span 2;background:#24221f;border:1px solid #33302b;border-radius:14px;padding:22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#736f69;">Popover</div>
+        <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;">resolved side: {{ popSide }}</div>
+      </div>
+      <div style="font-size:12.5px;color:#8d8880;margin-top:9px;line-height:1.55;max-width:640px;">Each trigger asks for a side. If it doesn't fit, the popover flips to the opposite side; if it still hangs off, it shifts along the other axis and the arrow slides to keep pointing at its anchor. Scroll the page or narrow the window with one open &mdash; it re-solves live. Click outside or press Escape to dismiss.</div>
+      <div style="margin-top:18px;border-radius:12px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);padding:22px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;">
+        <sc-for list="{{ triggers }}" as="t" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+            <button onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button>
+            <span style="font-size:11px;color:#5f5b55;max-width:150px;line-height:1.4;">{{ t.hint }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#5f5b55;margin-top:18px;line-height:1.7;">flip &rarr; shift &rarr; arrow clamp, 12px viewport padding, 11px anchor gap<br />arrow is a rotated square with two outward borders, so the seam matches</div>
+    </div>
+
+  </div>
+
+  <sc-if value="{{ popOpen }}">
+    <div ref="{{ popRef }}" style="{{ popStyle }}">
+      <div style="{{ arrowStyle }}"></div>
+      <sc-if value="{{ popIsMenu }}">
+        <div style="position:relative;padding:6px;min-width:216px;display:flex;flex-direction:column;gap:1px;">
+          <sc-for list="{{ menuItems }}" as="m" hint-placeholder-count="4">
+            <button onClick="{{ closePop }}" style="{{ m.style }}" style-hover="background:rgba(255,255,255,.06);"><span>{{ m.label }}</span><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#6b665f;">{{ m.key }}</span></button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ popIsInfo }}">
+        <div style="position:relative;padding:16px;width:300px;">
+          <div style="font-size:13.5px;font-weight:600;color:#f2efea;">Phone audio</div>
+          <div style="font-size:12.5px;color:#a6a19a;margin-top:7px;line-height:1.55;text-wrap:pretty;">Captured only when the connected iPhone routes audio over the cable. If it's silent, narrate with the microphone instead.</div>
+          <div style="display:flex;gap:8px;margin-top:14px;">
+            <button onClick="{{ closePop }}" style="padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:linear-gradient(180deg,#fdfcfa,#e8e4dc);border:1px solid #d5cfc4;box-shadow:inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.4);color:#16150f;">Got it</button>
+            <button onClick="{{ closePop }}" style="padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;background:transparent;border:1px solid transparent;color:#a6a19a;" style-hover="background:rgba(255,255,255,.055);color:#f2efea;">Learn more</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ popIsTip }}">
+        <div style="position:relative;padding:9px 12px;max-width:220px;font-size:12px;color:#dedad3;line-height:1.5;">Each source is written to its own file, so layout stays editable after recording.</div>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1160}}">
+class Component extends DCLogic {
+  state = { ratio:0, shape:1, tab:0, sw:[true,false,true], mic:88, radius:34, card:0, sw2:0, pop:null, pos:null };
+
+  _move = (e)=>{ const d=this._s; if(!d) return;
+    const f=Math.max(0,Math.min(1,(e.clientX-d.rect.left)/d.rect.width));
+    this.setState({[d.key]:Math.round(f*100)}); };
+  _end = ()=>{ this._s=null; window.removeEventListener('pointermove',this._move); window.removeEventListener('pointerup',this._end); };
+  slide(key,e){ e.preventDefault(); this._s={key,rect:e.currentTarget.firstChild.getBoundingClientRect()};
+    this._move(e); window.addEventListener('pointermove',this._move); window.addEventListener('pointerup',this._end); }
+
+  popRef = React.createRef();
+
+  componentDidMount(){
+    this._out=(e)=>{ const p=this.popRef.current;
+      if(!this.state.pop) return;
+      if(p&&p.contains(e.target)) return;
+      if(this._anchor&&this._anchor.contains(e.target)) return;
+      this.closePop(); };
+    this._esc=(e)=>{ if(e.key==='Escape') this.closePop(); };
+    this._re=()=>{ if(this.state.pop) this.place(); };
+    window.addEventListener('pointerdown',this._out,true);
+    window.addEventListener('keydown',this._esc);
+    window.addEventListener('resize',this._re);
+    window.addEventListener('scroll',this._re,true);
+  }
+  componentWillUnmount(){
+    window.removeEventListener('pointerdown',this._out,true);
+    window.removeEventListener('keydown',this._esc);
+    window.removeEventListener('resize',this._re);
+    window.removeEventListener('scroll',this._re,true);
+  }
+  componentDidUpdate(){ if(this.state.pop&&!this.state.pos) this.place(); }
+
+  openPop(id,place,e){
+    e.stopPropagation();
+    if(this.state.pop&&this.state.pop.id===id){ this.closePop(); return; }
+    this._anchor=e.currentTarget;
+    this.setState({pop:{id,place},pos:null});
+  }
+  closePop(){ this._anchor=null; this.setState({pop:null,pos:null}); }
+
+  /* flip to the opposite side when the preferred one doesn't fit, then shift
+     along the cross axis to stay inside the viewport; the arrow tracks the
+     anchor's centre and clamps short of the popover's rounded corners. */
+  place(){
+    const el=this.popRef.current, an=this._anchor;
+    if(!el||!an) return;
+    const a=an.getBoundingClientRect(), r=el.getBoundingClientRect();
+    const w=r.width, h=r.height, W=window.innerWidth, H=window.innerHeight, P=12, G=11;
+    const fits={ top:a.top-G-h>=P, bottom:a.bottom+G+h<=H-P, left:a.left-G-w>=P, right:a.right+G+w<=W-P };
+    const opp={ top:'bottom', bottom:'top', left:'right', right:'left' };
+    let side=this.state.pop.place;
+    if(!fits[side]&&fits[opp[side]]) side=opp[side];
+    let x,y,arrow;
+    if(side==='top'||side==='bottom'){
+      y = side==='top' ? a.top-G-h : a.bottom+G;
+      x = Math.max(P, Math.min(W-P-w, a.left+a.width/2-w/2));
+      arrow = Math.max(18, Math.min(w-18, a.left+a.width/2-x));
+    } else {
+      x = side==='left' ? a.left-G-w : a.right+G;
+      y = Math.max(P, Math.min(H-P-h, a.top+a.height/2-h/2));
+      arrow = Math.max(18, Math.min(h-18, a.top+a.height/2-y));
+    }
+    const c=this.state.pos;
+    if(c&&c.x===x&&c.y===y&&c.side===side&&c.arrow===arrow) return;
+    this.setState({pos:{x,y,side,arrow}});
+  }
+
+  renderVals(){
+    const s=this.state;
+    const seg=(arr,key)=>arr.map((label,i)=>({label,color:s[key]===i?'#f2efea':'#8d8880',go:()=>this.setState({[key]:i})}));
+    const tabStyle=(a)=>({padding:'7px 15px',borderRadius:'8px',fontSize:'12.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',
+      transition:'background .2s ease,color .2s ease,transform .1s cubic-bezier(.32,.72,0,1),box-shadow .16s ease',
+      ...(a?{background:'linear-gradient(180deg,#fdfcfa,#e8e4dc)',border:'1px solid #d5cfc4',boxShadow:'inset 0 1px 0 #fff,0 1px 3px rgba(0,0,0,.35)',color:'#16150f'}
+          :{background:'transparent',border:'1px solid transparent',boxShadow:'none',color:'#8d8880'})});
+
+    const CARDS=[
+      {label:'Picture in picture',px:38,py:5,pw:23,ph:90,cx:68,cy:58,cw:19,ch:34,cr:11},
+      {label:'Side by side',px:7,py:10,pw:21,ph:80,cx:40,cy:24,cw:52,ch:52,cr:3}
+    ];
+    const cards=CARDS.map((c,i)=>({...c,go:()=>this.setState({card:i}),
+      style:{padding:'9px',borderRadius:'10px',cursor:'pointer',fontFamily:'inherit',textAlign:'left',
+        transition:'background .2s ease,border-color .2s ease,transform .1s cubic-bezier(.32,.72,0,1),box-shadow .18s ease',
+        ...(s.card===i?{color:'#f2efea',background:'linear-gradient(180deg,oklch(0.63 0.16 252 / 0.18),oklch(0.63 0.16 252 / 0.07))',border:'1px solid oklch(0.63 0.16 252)',boxShadow:'inset 0 1px 0 rgba(255,255,255,.08),0 1px 3px rgba(0,0,0,.35)'}
+            :{color:'#a6a19a',background:'linear-gradient(180deg,#2f2c28,#282521)',border:'1px solid #3a3630',boxShadow:'inset 0 1px 0 rgba(255,255,255,.04)'})}}));
+
+    const swatches=['#F4F2EC','#E8E2D6','#1C1B19','#2F4C46','#C4D4E0'].map((c,i)=>({
+      go:()=>this.setState({sw2:i}),
+      style:{width:'38px',height:'38px',borderRadius:'10px',cursor:'pointer',background:c,padding:0,
+        transition:'box-shadow .2s cubic-bezier(.32,.72,0,1),transform .1s cubic-bezier(.32,.72,0,1)',
+        border:'1px solid #3d3833',
+        boxShadow:s.sw2===i?'0 0 0 2px #24221f,0 0 0 4px #f2efea,0 1px 3px rgba(0,0,0,.4)':'inset 0 1px 0 rgba(255,255,255,.25)'}}));
+
+    const SW=[['Camera','Record your face alongside the phone'],['Phone frame','Draw the device bezel'],['Hardware acceleration','Encode with VideoToolbox']];
+    return {
+      ratioI:s.ratio, shapeI:s.shape,
+      ratios:seg(['16:9','9:16','1:1'],'ratio'),
+      shapes:seg(['Circle','Rounded'],'shape'),
+      tabs:['General','Devices','Recording','Export'].map((label,i)=>({label,go:()=>this.setState({tab:i}),style:tabStyle(s.tab===i)})),
+      switches:SW.map(([label,hint],i)=>({label,hint,
+        track:s.sw[i]?'linear-gradient(180deg,oklch(0.68 0.15 252),oklch(0.58 0.16 252))':'#211f1c',
+        knob:s.sw[i]?'translateX(18px)':'translateX(0)',
+        go:()=>this.setState(p=>{const n=[...p.sw];n[i]=!n[i];return {sw:n};})})),
+      micVol:s.mic, radius:s.radius,
+      slideMic:(e)=>this.slide('mic',e), slideRadius:(e)=>this.slide('radius',e),
+      cards, swatches,
+
+      popRef:this.popRef, popOpen:!!s.pop, closePop:()=>this.closePop(),
+      popIsMenu:!!s.pop&&s.pop.id==='menu', popIsInfo:!!s.pop&&s.pop.id==='info',
+      popIsSwatch:!!s.pop&&s.pop.id==='swatch', popIsTip:!!s.pop&&s.pop.id==='tip',
+      popSide:s.pos?s.pos.side:'&mdash;',
+      triggers:[
+        {label:'Top',    place:'top',    hint:'flips down near the top edge'},
+        {label:'Right',  place:'right',  hint:'flips left near the right edge'},
+        {label:'Menu',   place:'bottom', hint:'bottom, shifts to stay in view'},
+        {label:'Left',   place:'left',   hint:'flips right near the left edge'},
+        {label:'Detail', place:'bottom', hint:'wide card, arrow tracks anchor'}
+      ].map((t,i)=>({...t, id:['tipA','tipB','menu','tipC','info'][i],
+        go:(e)=>this.openPop(['tipA','tipB','menu','tipC','info'][i],t.place,e),
+        style:{padding:'8px 15px',borderRadius:'9px',fontSize:'12.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',
+          background:'linear-gradient(180deg,#3b3733,#2e2b27)',border:'1px solid #47423b',
+          boxShadow:'inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35)',color:'#f2efea'}})),
+      popStyle:{position:'fixed',zIndex:90,left:(s.pos?s.pos.x:-9999)+'px',top:(s.pos?s.pos.y:-9999)+'px',
+        opacity:s.pos?1:0,transform:s.pos?'scale(1)':'scale(.96)',
+        transformOrigin:s.pos?({top:'bottom center',bottom:'top center',left:'right center',right:'left center'})[s.pos.side]:'center',
+        transition:'opacity .14s ease, transform .18s cubic-bezier(.32,.72,0,1)',
+        background:'linear-gradient(180deg,#2f2c28,#262320)',border:'1px solid #45403a',borderRadius:'12px',
+        boxShadow:'0 18px 44px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)'},
+      arrowStyle:(()=>{
+        const p=s.pos; if(!p) return {display:'none'};
+        const B='1px solid #45403a', k=p.arrow-6;
+        const per={ top:{left:k+'px',bottom:'-6px',borderRight:B,borderBottom:B,background:'#262320'},
+                    bottom:{left:k+'px',top:'-6px',borderLeft:B,borderTop:B,background:'#2f2c28'},
+                    left:{top:k+'px',right:'-6px',borderTop:B,borderRight:B,background:'#2a2724'},
+                    right:{top:k+'px',left:'-6px',borderBottom:B,borderLeft:B,background:'#2a2724'} }[p.side];
+        return {position:'absolute',width:'12px',height:'12px',transform:'rotate(45deg)',borderRadius:'2px',...per};
+      })(),
+      menuItems:[
+        {label:'Duplicate layout',key:'⌘D',danger:false},
+        {label:'Save as preset',key:'⇧⌘S',danger:false},
+        {label:'Reset to default',key:'',danger:false},
+        {label:'Delete preset',key:'⌫',danger:true}
+      ].map(m=>({...m,style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'24px',width:'100%',
+        padding:'7px 10px',borderRadius:'7px',fontSize:'12.5px',fontWeight:500,cursor:'pointer',fontFamily:'inherit',
+        background:'transparent',border:'1px solid transparent',boxShadow:'none',textAlign:'left',
+        color:m.danger?'oklch(0.68 0.16 26)':'#dedad3'}}))
+    };
+  }
+}
+</script>
+</body>
+</html>

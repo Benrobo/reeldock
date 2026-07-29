@@ -1,4 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { Icon } from "@benrobo/iconary/react";
+import { ArrowDown01Icon } from "@benrobo/iconary/core/duotone-rounded";
 import { cn } from "../utils/cn";
 
 export type ButtonVariant = "bright" | "dark" | "accent" | "record" | "ghost";
@@ -61,7 +63,6 @@ export function Button({
   );
 }
 
-/** The white dot on the Record button — a filled circle inside a soft halo. */
 export function RecordDot() {
   return <span className="shadow-record-dot block size-[9px] rounded-full bg-white" />;
 }
@@ -93,7 +94,7 @@ export function SplitButton({
         size="md"
         variant={variant}
       >
-        &#9662;
+        <Icon color="currentColor" icon={ArrowDown01Icon} size={14} />
       </Button>
     </div>
   );
@@ -132,7 +133,6 @@ type ToolButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
 };
 
-/** Compact toolbar action with an explicit inert disabled fill. */
 export function ToolButton({
   children,
   className,

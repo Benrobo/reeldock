@@ -10,8 +10,6 @@ const dotClass: Record<StatusTone, string> = {
   neutral: "bg-fg-key",
 };
 
-/* Tint at 14-16%, border the same hue at 36-42%, dot always the full-strength
-   hue. Neutral inverts to the raised row recipe instead of a tint. */
 const pillClass: Record<StatusTone, string> = {
   rec: "border-rec/[36%] bg-rec/[14%] text-rec-fg",
   ok: "border-ok/[36%] bg-ok/[14%] text-ok-fg",
@@ -67,7 +65,6 @@ type RecordingPillProps = {
   className?: string;
 };
 
-/** The live-recording badge: a larger pulsing dot and uppercase tracking. */
 export function RecordingPill({ children = "Recording", className }: RecordingPillProps) {
   return (
     <span
@@ -109,7 +106,6 @@ type TagProps = {
   className?: string;
 };
 
-/** Monospace metadata tag — protocol, codec, container. */
 export function Tag({ children, className }: TagProps) {
   return (
     <span

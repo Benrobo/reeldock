@@ -1,4 +1,5 @@
 export { cn } from "./utils/cn";
+export { ActivitySpinner } from "./components/activity-spinner";
 
 export {
   Button,

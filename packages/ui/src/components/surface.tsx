@@ -54,8 +54,6 @@ type SurfaceRowProps = {
   className?: string;
 };
 
-/* Rows gradient down from #2f2c28 to #282521 — the same recipe as a control,
-   one step calmer. */
 export function SurfaceRow({ children, tone, className }: SurfaceRowProps) {
   return (
     <div
@@ -85,7 +83,6 @@ type BannerProps = {
   className?: string;
 };
 
-/** Banners tint the whole row — no left accent bar. */
 export function Banner({ children, tone = "warn", action, className }: BannerProps) {
   return (
     <div
@@ -107,7 +104,6 @@ type WellProps = {
   className?: string;
 };
 
-/** Recessed well — for read-only detail and checklists. */
 export function Well({ children, className }: WellProps) {
   return (
     <div
@@ -157,8 +153,6 @@ type SettingsListProps = {
   className?: string;
 };
 
-/* Hairlines are faked with a 1px flex gap over the group's own background, so
-   rows stay square-cornered inside a rounded container. */
 export function SettingsList({ children, className }: SettingsListProps) {
   return (
     <div
