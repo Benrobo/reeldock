@@ -25,7 +25,10 @@ reeldock/
 │   └── marketing/        Next.js landing page
 ├── packages/
 │   ├── project-schema/   Zod schema for .reeldock project.json files
-│   └── shared/           Product constants and shared types
+│   ├── shared/           Product constants and shared types
+│   ├── tailwind-config/  Shared Tailwind v4 theme — the design-spec tokens
+│   ├── ui/               @reeldock/ui design-system primitives
+│   └── ui-preview/       Live gallery of every primitive in @reeldock/ui
 ├── docs/                 PRD and product notes
 ├── memory/               Agent-readable architecture, patterns, decisions
 ├── .agents/              Bundled skills for future coding agents
@@ -55,6 +58,19 @@ Marketing site:
 ```bash
 bun run dev:marketing
 ```
+
+UI kit — every `@reeldock/ui` primitive, live:
+
+```bash
+bun run dev:ui-preview   # http://localhost:7196
+```
+
+## Design System
+
+The visual language is ported 1:1 from `docs/ReelDock design specification`. Tokens live in
+[packages/tailwind-config/globals.css](packages/tailwind-config/globals.css) and are mirrored for
+TypeScript consumers in `theme.ts`. Primitives live in `@reeldock/ui`; build screens by composing
+them rather than re-deriving the gradients, borders, and shadows by hand.
 
 ## Development Priorities
 

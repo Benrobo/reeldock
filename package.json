@@ -20,7 +20,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "turbo run clean",
-    "skills:install": "bash scripts/install-skills.sh"
+    "skills:install": "bash scripts/install-skills.sh",
+    "dev:ui-preview": "turbo run dev --filter=@reeldock/ui-preview"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

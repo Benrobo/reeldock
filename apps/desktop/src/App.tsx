@@ -2,7 +2,6 @@ import { Icon } from "@benrobo/iconary/react";
 import type { IconData } from "@benrobo/iconary/core";
 import {
   CameraVideoIcon,
-  CircleIcon,
   Mic01Icon,
   MonitorDotIcon,
   Plug01Icon,
@@ -14,7 +13,28 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useMemo, useState } from "react";
 import { createEmptyProject } from "@reeldock/project-schema";
-import { ASPECT_RATIOS, LAYOUT_PRESETS, MVP_PHASES, type CaptureSource } from "@reeldock/shared";
+import {
+  ASPECT_RATIOS,
+  LAYOUT_PRESETS,
+  MVP_PHASES,
+  type CaptureSource,
+  type CaptureSourceState,
+  type LayoutPresetId,
+} from "@reeldock/shared";
+import {
+  Button,
+  ChoiceCard,
+  EmptyState,
+  Panel,
+  PanelLabel,
+  RecordDot,
+  SettingsList,
+  SettingsRow,
+  StatusPill,
+  SurfaceRow,
+  type Rect,
+  type StatusTone,
+} from "@reeldock/ui";
 
 const fallbackSources: CaptureSource[] = [
   {
@@ -43,8 +63,40 @@ const sourceIcon = {
   microphone: Mic01Icon,
 } satisfies Record<CaptureSource["kind"], IconData>;
 
+const sourceTone = {
+  available: "ok",
+  "permission-required": "warn",
+  unavailable: "neutral",
+} satisfies Record<CaptureSourceState, StatusTone>;
+
+const layoutGeometry = {
+  "phone-focus": {
+    phone: { x: 38, y: 5, w: 23, h: 90 },
+    camera: { x: 0, y: 0, w: 0, h: 0 },
+  },
+  "side-by-side": {
+    phone: { x: 7, y: 10, w: 21, h: 80 },
+    camera: { x: 40, y: 24, w: 52, h: 52, radius: 3 },
+  },
+  "picture-in-picture": {
+    phone: { x: 38, y: 5, w: 23, h: 90 },
+    camera: { x: 68, y: 58, w: 19, h: 34, radius: 11 },
+  },
+  "vertical-demo": {
+    phone: { x: 30, y: 2, w: 40, h: 96 },
+    camera: { x: 74, y: 70, w: 20, h: 26, radius: 10 },
+  },
+} satisfies Record<LayoutPresetId, { phone: Rect; camera: Rect }>;
+
+const navItems = [
+  { label: "Record", icon: RecordIcon },
+  { label: "Editor", icon: Scissor01Icon },
+  { label: "Preferences", icon: Settings01Icon },
+];
+
 export function App() {
   const [sources, setSources] = useState<CaptureSource[]>(fallbackSources);
+  const [layout, setLayout] = useState<LayoutPresetId>(LAYOUT_PRESETS[0].id);
   const draftProject = useMemo(() => createEmptyProject("Elorah Reading Plan Demo"), []);
 
   useEffect(() => {
@@ -54,49 +106,44 @@ export function App() {
   }, []);
 
   return (
-    <main className="from-panel-warm to-dock-100 text-ink grid min-h-screen grid-cols-1 bg-gradient-to-b lg:grid-cols-[280px_minmax(0,1fr)]">
-      <aside className="border-line bg-panel/85 hidden flex-col gap-[30px] border-r px-5 py-7 lg:flex">
+    <main className="bg-canvas font-ui text-fg grid min-h-screen grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <aside className="border-surface-line bg-window hidden flex-col gap-[30px] border-r px-5 py-7 lg:flex">
         <div className="flex items-center gap-3.5">
-          <div className="bg-dock-700 grid size-[46px] place-items-center rounded-md text-white shadow-[inset_0_-10px_18px_rgba(0,0,0,0.18)]">
-            <Icon icon={MonitorDotIcon} size={22} color="currentColor" />
+          <div className="border-group-line bg-raised-alt-top text-rec grid size-[46px] place-items-center rounded-[14px] border">
+            <Icon color="currentColor" icon={MonitorDotIcon} size={22} />
           </div>
           <div>
-            <p className="text-muted mb-1 text-xs font-bold uppercase">MVP workspace</p>
-            <h1 className="text-2xl font-black leading-none">ReelDock</h1>
+            <PanelLabel>MVP workspace</PanelLabel>
+            <h1 className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.022em]">
+              ReelDock
+            </h1>
           </div>
         </div>
 
-        <nav className="grid gap-2" aria-label="Primary">
-          <button
-            className="border-line bg-panel text-ink flex h-[42px] w-full cursor-pointer items-center gap-2.5 rounded-md border px-3"
-            type="button"
-          >
-            <Icon icon={RecordIcon} size={18} color="currentColor" />
-            Record
-          </button>
-          <button
-            className="text-muted flex h-[42px] w-full cursor-pointer items-center gap-2.5 rounded-md border border-transparent bg-transparent px-3"
-            type="button"
-          >
-            <Icon icon={Scissor01Icon} size={18} color="currentColor" />
-            Editor
-          </button>
-          <button
-            className="text-muted flex h-[42px] w-full cursor-pointer items-center gap-2.5 rounded-md border border-transparent bg-transparent px-3"
-            type="button"
-          >
-            <Icon icon={Settings01Icon} size={18} color="currentColor" />
-            Preferences
-          </button>
+        <nav aria-label="Primary" className="grid gap-1.5">
+          {navItems.map((item, index) => (
+            <button
+              className={
+                index === 0
+                  ? "rd-press border-accent bg-linear-to-b from-accent/[18%] to-accent/[7%] text-fg shadow-selected flex h-[42px] w-full cursor-pointer items-center gap-2.5 rounded-[10px] border px-3 text-[13px] font-semibold"
+                  : "rd-press text-fg-2 hover:text-fg flex h-[42px] w-full cursor-pointer items-center gap-2.5 rounded-[10px] border border-transparent px-3 text-[13px] font-medium hover:bg-white/[5.5%]"
+              }
+              key={item.label}
+              type="button"
+            >
+              <Icon color="currentColor" icon={item.icon} size={18} />
+              {item.label}
+            </button>
+          ))}
         </nav>
 
-        <section className="mt-auto grid gap-2.5" aria-label="MVP phases">
+        <section aria-label="MVP phases" className="mt-auto grid gap-2.5">
           {MVP_PHASES.map((phase, index) => (
             <div
-              className="text-muted grid grid-cols-[28px_1fr] items-center gap-2.5 text-[13px]"
+              className="text-fg-3 grid grid-cols-[28px_1fr] items-center gap-2.5 text-[12px]"
               key={phase}
             >
-              <span className="border-line bg-panel text-dock-700 grid size-7 place-items-center rounded-full border font-bold">
+              <span className="border-well-line bg-well font-ui-mono text-fg-control shadow-well grid size-7 place-items-center rounded-full border text-[11px]">
                 {index + 1}
               </span>
               <p>{phase}</p>
@@ -108,108 +155,90 @@ export function App() {
       <section className="flex min-w-0 flex-col gap-6 p-5 sm:p-7">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div>
-            <p className="text-muted mb-1 text-xs font-bold uppercase">Recording setup</p>
-            <h2 className="max-w-[760px] text-3xl font-black leading-tight">
+            <PanelLabel>Recording setup</PanelLabel>
+            <h2 className="mt-1.5 max-w-[760px] text-[26px] font-semibold leading-tight tracking-[-0.022em]">
               Connect sources before recording
             </h2>
           </div>
-          <button
-            className="bg-coral inline-flex h-11 min-w-[126px] cursor-pointer items-center justify-center gap-2.5 rounded-md border-0 px-[18px] font-extrabold text-white"
-            type="button"
-          >
-            <Icon icon={CircleIcon} size={18} color="currentColor" />
+          <Button leading={<RecordDot />} variant="record">
             Record
-          </button>
+          </Button>
         </header>
 
         <section className="grid min-h-0 gap-6 xl:grid-cols-[minmax(520px,1fr)_390px]">
-          <div className="border-line from-aqua/55 to-panel/70 grid min-h-[420px] place-items-center rounded-md border bg-gradient-to-br xl:min-h-[640px]">
-            <div className="border-ink/15 bg-panel-warm relative aspect-video w-[min(78%,760px)] rounded-md border shadow-[0_26px_70px_rgba(41,56,67,0.2)]">
-              <div className="absolute left-[9%] top-[7%] grid h-[86%] w-[30%] rounded-[34px] bg-[#171b1f] p-2.5">
-                <div className="grid place-items-center rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.16),transparent_22%),linear-gradient(160deg,var(--color-dock-700),var(--color-steel)_60%,#171b1f)] font-extrabold text-[#e9fbf4]">
-                  <span>Phone preview</span>
-                </div>
-              </div>
-              <div className="border-panel-warm bg-steel absolute bottom-[14%] right-[10%] grid aspect-square w-[28%] place-items-center rounded-full border-8 font-extrabold text-white shadow-[0_18px_38px_rgba(41,56,67,0.2)]">
-                Camera
-              </div>
-            </div>
+          <div className="border-surface-line bg-surface shadow-panel grid min-h-[420px] place-items-center rounded-[14px] border p-6 xl:min-h-[640px]">
+            <EmptyState className="aspect-video w-[min(88%,760px)]" title="No sources connected">
+              Connect an iPhone over USB, then press Record to fill this canvas.
+            </EmptyState>
           </div>
 
           <div className="grid content-start gap-4">
-            <section className="border-line bg-panel/90 rounded-md border">
-              <div className="border-line flex min-h-12 items-center gap-2.5 border-b px-4">
-                <Icon icon={Plug01Icon} size={18} color="currentColor" />
-                <h3 className="text-[15px] font-black">Sources</h3>
+            <Panel className="p-0">
+              <div className="border-surface-line text-fg-2 flex min-h-12 items-center gap-2.5 border-b px-4">
+                <Icon color="currentColor" icon={Plug01Icon} size={18} />
+                <PanelLabel>Sources</PanelLabel>
               </div>
               <div className="grid gap-2.5 p-3.5">
-                {sources.map((source) => {
-                  const icon = sourceIcon[source.kind];
-
-                  return (
-                    <div
-                      className="border-line bg-panel grid min-h-14 grid-cols-[24px_1fr] items-center gap-3 rounded-md border px-3"
-                      key={source.id}
-                    >
-                      <Icon icon={icon} size={20} color="currentColor" />
-                      <div className="grid gap-1">
-                        <strong className="text-sm">{source.label}</strong>
-                        <span className="text-muted text-xs">{source.state.replace("-", " ")}</span>
+                {sources.map((source) => (
+                  <SurfaceRow key={source.id} tone={sourceTone[source.state]}>
+                    <Icon color="currentColor" icon={sourceIcon[source.kind]} size={20} />
+                    <div className="flex-1">
+                      <div className="text-[12.5px] font-semibold">{source.label}</div>
+                      <div className="text-fg-3 mt-px text-[11.5px]">
+                        {source.state.replace("-", " ")}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="border-line bg-panel/90 rounded-md border">
-              <div className="border-line flex min-h-12 items-center gap-2.5 border-b px-4">
-                <Icon icon={MonitorDotIcon} size={18} color="currentColor" />
-                <h3 className="text-[15px] font-black">Layout presets</h3>
-              </div>
-              <div className="grid gap-2.5 p-3.5">
-                {LAYOUT_PRESETS.map((preset, index) => (
-                  <button
-                    className={[
-                      "text-ink grid min-h-16 cursor-pointer gap-1 rounded-md border p-3 text-left",
-                      index === 0 ? "border-dock-700/40 bg-dock-50" : "border-line bg-panel",
-                    ].join(" ")}
-                    key={preset.id}
-                    type="button"
-                  >
-                    <strong className="text-sm">{preset.label}</strong>
-                    <span className="text-muted text-xs">{preset.description}</span>
-                  </button>
+                  </SurfaceRow>
                 ))}
               </div>
-            </section>
+            </Panel>
 
-            <section className="border-line bg-panel/90 rounded-md border">
-              <div className="border-line flex min-h-12 items-center gap-2.5 border-b px-4">
-                <Icon icon={Settings01Icon} size={18} color="currentColor" />
-                <h3 className="text-[15px] font-black">Project contract</h3>
+            <Panel className="p-0">
+              <div className="border-surface-line text-fg-2 flex min-h-12 items-center gap-2.5 border-b px-4">
+                <Icon color="currentColor" icon={MonitorDotIcon} size={18} />
+                <PanelLabel>Layout presets</PanelLabel>
               </div>
-              <dl className="m-0 grid gap-2.5 p-3.5">
-                <div className="border-line flex justify-between gap-5 border-b pb-2.5">
-                  <dt className="text-muted text-xs">Project</dt>
-                  <dd className="text-ink m-0 text-right text-[13px] font-bold">
-                    {draftProject.name}
-                  </dd>
-                </div>
-                <div className="border-line flex justify-between gap-5 border-b pb-2.5">
-                  <dt className="text-muted text-xs">Canvas</dt>
-                  <dd className="text-ink m-0 text-right text-[13px] font-bold">
-                    {draftProject.canvas.width} x {draftProject.canvas.height}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-5">
-                  <dt className="text-muted text-xs">Ratios</dt>
-                  <dd className="text-ink m-0 text-right text-[13px] font-bold">
-                    {ASPECT_RATIOS.map((ratio) => ratio.id).join(", ")}
-                  </dd>
-                </div>
-              </dl>
-            </section>
+              <div className="grid grid-cols-2 gap-2.5 p-3.5">
+                {LAYOUT_PRESETS.map((preset) => (
+                  <ChoiceCard
+                    camera={layoutGeometry[preset.id].camera}
+                    key={preset.id}
+                    label={preset.label}
+                    onSelect={() => setLayout(preset.id)}
+                    phone={layoutGeometry[preset.id].phone}
+                    selected={layout === preset.id}
+                  />
+                ))}
+              </div>
+            </Panel>
+
+            <Panel className="p-0">
+              <div className="border-surface-line text-fg-2 flex min-h-12 items-center gap-2.5 border-b px-4">
+                <Icon color="currentColor" icon={Settings01Icon} size={18} />
+                <PanelLabel>Project contract</PanelLabel>
+              </div>
+              <div className="p-3.5">
+                <SettingsList>
+                  <SettingsRow label="Project">
+                    <span className="text-[13px] font-semibold">{draftProject.name}</span>
+                  </SettingsRow>
+                  <SettingsRow label="Canvas">
+                    <span className="font-ui-mono text-fg-value text-[12px]">
+                      {draftProject.canvas.width} × {draftProject.canvas.height}
+                    </span>
+                  </SettingsRow>
+                  <SettingsRow label="Ratios">
+                    <div className="flex gap-1.5">
+                      {ASPECT_RATIOS.map((ratio) => (
+                        <StatusPill key={ratio.id} tone="neutral">
+                          {ratio.id}
+                        </StatusPill>
+                      ))}
+                    </div>
+                  </SettingsRow>
+                </SettingsList>
+              </div>
+            </Panel>
           </div>
         </section>
       </section>

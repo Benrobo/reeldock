@@ -10,16 +10,18 @@ The product source of truth is [docs/ReelDock_PRD.md](docs/ReelDock_PRD.md). Rep
 
 ## Read Before You Write
 
-| Task type                | Files to read first                                                                      |
-| ------------------------ | ---------------------------------------------------------------------------------------- |
-| First task in this repo  | `docs/ReelDock_PRD.md`, `memory/architecture.md`, `memory/conventions.md`                |
-| Desktop UI work          | `apps/desktop/src/App.tsx`, `packages/tailwind-config/globals.css`, `memory/patterns.md` |
-| Marketing page work      | `apps/marketing/src/app/page.tsx`, `packages/tailwind-config/globals.css`                |
-| Project file changes     | `packages/project-schema/src/index.ts`, `memory/patterns.md`                             |
-| Native capture work      | `docs/ReelDock_PRD.md` sections 10, 12, 13, 18, and 20                                   |
-| Adding or changing icons | `.agents/skills/benrobo-iconary/SKILL.md`, `memory/icons.md`                             |
-| Conductor setup          | `.conductor/settings.toml`, `memory/conventions.md`                                      |
-| Adding skills            | `.agents/README.md`, `scripts/install-skills.sh`                                         |
+| Task type                | Files to read first                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| First task in this repo  | `docs/ReelDock_PRD.md`, `memory/architecture.md`, `memory/conventions.md`               |
+| Any product UI work      | `memory/styling.md`, `packages/ui/src/index.ts`, `packages/tailwind-config/globals.css` |
+| Desktop UI work          | `apps/desktop/src/App.tsx`, `memory/styling.md`, `memory/patterns.md`                   |
+| Marketing page work      | `apps/marketing/src/app/page.tsx`, `memory/styling.md`                                  |
+| Adding a UI primitive    | `packages/ui/src/components/`, `packages/ui-preview/src/routes/`, `memory/styling.md`   |
+| Project file changes     | `packages/project-schema/src/index.ts`, `memory/patterns.md`                            |
+| Native capture work      | `docs/ReelDock_PRD.md` sections 10, 12, 13, 18, and 20                                  |
+| Adding or changing icons | `.agents/skills/benrobo-iconary/SKILL.md`, `memory/icons.md`                            |
+| Conductor setup          | `.conductor/settings.toml`, `memory/conventions.md`                                     |
+| Adding skills            | `.agents/README.md`, `scripts/install-skills.sh`                                        |
 
 ## Hard Rules
 
@@ -31,12 +33,15 @@ The product source of truth is [docs/ReelDock_PRD.md](docs/ReelDock_PRD.md). Rep
 - Do not promise Android, cloud rendering, AI editing, captions, or a full timeline editor for MVP work unless the PRD changes.
 - Do not commit recordings, exports, `.env` files, build output, or local `.reeldock` project folders.
 - Do not add app-specific CSS for normal product layout. Use Tailwind classes and shared tokens from `@reeldock/tailwind-config`.
+- Do not hand-roll buttons, panels, pills, fields, or popovers. Compose them from `@reeldock/ui`.
+- Do not re-tune values ported from `docs/ReelDock design specification`. They are the design contract.
+- Every new primitive gets a specimen in `packages/ui-preview` in the same change.
 - Do not use `lucide-react`, inline SVG, or local icon registries. Use `@benrobo/iconary`.
 - Do not add AI agents as contributors in commits. No `Co-authored-by`, `Generated-by`, or similar agent attribution trailers.
 
 ## Icons
 
-Icons come from `@benrobo/iconary`. Use the React renderer from `@benrobo/iconary/react` and icon data from `@benrobo/iconary/core/duotone-rounded`.
+Icons come from `@benrobo/iconary`. Use the React renderer from `@benrobo/iconary/react` and icon data from `duotone-rounded` (default product UI), `solid-rounded` (filled emphasis), or `twotone-rounded` (brand and expressive moments).
 
 ```tsx
 import { Icon } from "@benrobo/iconary/react";
@@ -49,15 +54,17 @@ Verify exact export names before importing. The package is configured through th
 
 ## Package Boundaries
 
-| Location                   | Responsibility                                                                |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| `apps/desktop`             | Tauri app shell, React UI, Tauri command calls, desktop workflow              |
-| `apps/marketing`           | Public Next.js landing page for mainstream launch testing                     |
-| `packages/project-schema`  | Versioned `.reeldock/project.json` validation and inferred TypeScript types   |
-| `packages/shared`          | Product constants, layout presets, source state types, phase metadata         |
-| `packages/tailwind-config` | Shared Tailwind v4 globals, theme tokens, fonts, and TypeScript token exports |
-| `docs`                     | Product requirements and planning docs                                        |
-| `memory`                   | Agent-readable architecture, patterns, decisions, lessons, glossary           |
+| Location                   | Responsibility                                                              |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `apps/desktop`             | Tauri app shell, React UI, Tauri command calls, desktop workflow            |
+| `apps/marketing`           | Public Next.js landing page for mainstream launch testing                   |
+| `packages/project-schema`  | Versioned `.reeldock/project.json` validation and inferred TypeScript types |
+| `packages/shared`          | Product constants, layout presets, source state types, phase metadata       |
+| `packages/tailwind-config` | The design-system stylesheet: `@theme` tokens, base styles, `.rd-press`     |
+| `packages/ui`              | `@reeldock/ui` — every design-spec primitive, as React + Tailwind           |
+| `packages/ui-preview`      | Live gallery of `@reeldock/ui` on port 7196 (`bun run dev:ui-preview`)      |
+| `docs`                     | Product requirements and planning docs                                      |
+| `memory`                   | Agent-readable architecture, patterns, decisions, lessons, glossary         |
 
 ## Available Skills
 

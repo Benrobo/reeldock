@@ -3,54 +3,226 @@
 @source "../../apps/**/*.{ts,tsx}";
 @source "../../packages/**/*.{ts,tsx}";
 
+/*
+  Ported 1:1 from docs/ReelDock design specification. Every value below is
+  verbatim from that spec — do not re-tune them.
+
+  The recipe: a 1px border, a top-to-bottom gradient of about 8% lightness, a
+  hairline highlight along the top edge, and a 1-2px drop shadow. Raised things
+  gradient down and cast a shadow; recessed things (tracks, wells, fields)
+  invert both.
+*/
+
 @theme {
-  --color-dock-50: oklch(97% 0.018 153);
-  --color-dock-100: oklch(93% 0.045 153);
-  --color-dock-200: oklch(86% 0.077 153);
-  --color-dock-300: oklch(77% 0.11 153);
-  --color-dock-400: oklch(68% 0.13 153);
-  --color-dock-500: oklch(59% 0.12 153);
-  --color-dock-600: oklch(49% 0.095 153);
-  --color-dock-700: oklch(39% 0.07 153);
-  --color-dock-800: oklch(29% 0.048 153);
-  --color-dock-900: oklch(21% 0.032 153);
-  --color-ink: oklch(20% 0.02 154);
-  --color-paper: oklch(98% 0.012 92);
-  --color-muted: oklch(52% 0.018 154);
-  --color-panel: oklch(100% 0.002 92);
-  --color-panel-warm: oklch(96.5% 0.018 92);
-  --color-line: oklch(87% 0.014 140);
-  --color-night: oklch(16% 0.028 162);
-  --color-night-panel: oklch(21% 0.034 162);
-  --color-coral: oklch(68% 0.16 34);
-  --color-gold: oklch(78% 0.11 83);
-  --color-aqua: oklch(77% 0.09 179);
-  --color-steel: oklch(34% 0.04 224);
-  --color-success: oklch(63% 0.15 148);
-  --color-warning: oklch(76% 0.14 81);
-  --color-danger: oklch(61% 0.19 29);
-  --color-info: oklch(66% 0.12 232);
-  --font-sans:
-    "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
-  --font-display: Georgia, "Times New Roman", serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --radius-xs: 0.25rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --color-canvas: #131211;
+
+  --color-surface: #24221f;
+  --color-surface-line: #33302b;
+
+  --color-raised-top: #2f2c28;
+  --color-raised-bottom: #282521;
+  --color-raised-line: #3a3630;
+  --color-raised-alt-top: #2a2724;
+  --color-raised-alt-bottom: #232120;
+  --color-raised-alt-line: #35312c;
+
+  --color-control-top: #3b3733;
+  --color-control-bottom: #2e2b27;
+  --color-control-line: #47423b;
+  --color-control-line-strong: #4d473f;
+  --color-control-hover-top: #454039;
+  --color-control-hover-bottom: #37332e;
+
+  --color-bright-top: #fdfcfa;
+  --color-bright-bottom: #e8e4dc;
+  --color-bright-line: #d5cfc4;
+  --color-bright-hover-top: #ffffff;
+  --color-bright-hover-bottom: #f1eee8;
+  --color-on-bright: #16150f;
+
+  --color-accent: oklch(0.63 0.16 252);
+  --color-accent-top: oklch(0.68 0.15 252);
+  --color-accent-bottom: oklch(0.58 0.16 252);
+  --color-accent-line: oklch(0.48 0.14 252);
+  --color-accent-hover-top: oklch(0.72 0.15 252);
+  --color-accent-hover-bottom: oklch(0.62 0.16 252);
+  --color-accent-link-hover: oklch(0.72 0.14 252);
+  --color-fill-accent-top: oklch(0.7 0.15 252);
+  --color-fill-accent-bottom: oklch(0.6 0.16 252);
+  --color-accent-fg: #cfdcf5;
+
+  --color-rec: oklch(0.62 0.18 26);
+  --color-rec-top: oklch(0.66 0.18 26);
+  --color-rec-bottom: oklch(0.56 0.19 26);
+  --color-rec-line: oklch(0.46 0.16 26);
+  --color-rec-hover-top: oklch(0.7 0.18 26);
+  --color-rec-hover-bottom: oklch(0.6 0.19 26);
+  --color-rec-danger: oklch(0.68 0.16 26);
+  --color-rec-fg: #f0d9d3;
+
+  --color-ok: oklch(0.68 0.14 155);
+  --color-ok-top: oklch(0.74 0.14 155);
+  --color-ok-bottom: oklch(0.64 0.15 155);
+  --color-ok-meter-end: oklch(0.74 0.13 140);
+  --color-ok-fg: #cfe3d6;
+
+  --color-warn: oklch(0.72 0.15 75);
+  --color-warn-fg: #e8dcc6;
+  --color-warn-banner-fg: #efe7dc;
+
+  --color-track: #211f1c;
+  --color-track-line: #302d29;
+
+  --color-thumb-top: #403c37;
+  --color-thumb-bottom: #33302b;
+  --color-thumb-line: #4a453e;
+
+  --color-well: #1b1917;
+  --color-well-line: #302d29;
+
+  --color-knob-top: #ffffff;
+  --color-knob-bottom: #e9e6e0;
+  --color-knob-sm-bottom: #e6e2dc;
+  --color-knob-line: #b9b4ac;
+
+  --color-disabled: #2a2724;
+  --color-disabled-line: #35312c;
+  --color-disabled-fg: #5f5b55;
+
+  --color-popover-top: #2f2c28;
+  --color-popover-bottom: #262320;
+  --color-popover-line: #45403a;
+  --color-popover-arrow-side: #2a2724;
+
+  --color-chip: #332f2b;
+  --color-chip-line: #403b35;
+
+  --color-swatch-line: #3d3833;
+  --color-preview-phone: #6d675f;
+  --color-preview-camera: #4b4640;
+
+  --color-tool-disabled: #26231f;
+  --color-tool-disabled-fg: #565049;
+
+  --color-window: #1e1c1a;
+  --color-titlebar: #2a2724;
+  --color-titlebar-line: #201e1c;
+  --color-traffic-close: #ed6a5e;
+  --color-traffic-minimize: #f4bf4f;
+  --color-traffic-zoom: #61c554;
+
+  --color-modal: #242220;
+  --color-scrim: rgb(10 9 8 / 0.6);
+
+  --color-divider: #2e2b27;
+  --color-dash: #443f39;
+  --color-dash-strong: #4a443c;
+  --color-bullet: #5c5852;
+
+  --color-group-line: #37332e;
+  --color-group-row: #2b2825;
+
+  --color-value-chip: #302d29;
+  --color-value-chip-line: #3d3833;
+
+  --color-help: #332f2b;
+  --color-help-line: #423d37;
+
+  --color-code: #191715;
+  --color-code-line: #2f2b27;
+  --color-code-fg: #b5b0a8;
+
+  --color-fg: #f2efea;
+  --color-fg-value: #e7e3dd;
+  --color-fg-menu: #dedad3;
+  --color-fg-control: #c7c2ba;
+  --color-fg-2: #a6a19a;
+  --color-fg-3: #8d8880;
+  --color-fg-hint: #9a948c;
+  --color-fg-label: #736f69;
+  --color-fg-key: #6b665f;
+  --color-fg-faint: #5f5b55;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
+  --font-ui-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-ui-mono);
+
+  --shadow-panel: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  --shadow-row: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --shadow-row-strong: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --shadow-control: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-control-flat: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  --shadow-control-lift: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  --shadow-bright: inset 0 1px 0 #fff, 0 1px 3px rgb(0 0 0 / 0.4);
+  --shadow-bright-soft: inset 0 1px 0 #fff, 0 1px 3px rgb(0 0 0 / 0.35);
+  --shadow-accent: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 1px 3px rgb(0 0 0 / 0.4);
+  --shadow-rec: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 1px 3px rgb(0 0 0 / 0.4);
+  --shadow-selected: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 1px 3px rgb(0 0 0 / 0.35);
+  --shadow-stepper: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-thumb: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-track: inset 0 1px 3px rgb(0 0 0 / 0.45);
+  --shadow-well: inset 0 1px 3px rgb(0 0 0 / 0.45);
+  --shadow-well-soft: inset 0 1px 3px rgb(0 0 0 / 0.4);
+  --shadow-well-deep: inset 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-well-thin: inset 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-knob: 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.18);
+  --shadow-knob-sm: 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-hairline: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-hairline-bright: inset 0 1px 0 rgb(255 255 255 / 0.25);
+  --shadow-focus:
+    inset 0 1px 3px rgb(0 0 0 / 0.45),
+    0 0 0 3px color-mix(in oklab, var(--color-accent) 22%, transparent);
+  --shadow-swatch:
+    0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-fg), 0 1px 3px rgb(0 0 0 / 0.4);
+  --shadow-record-dot: 0 0 0 3px rgb(255 255 255 / 0.18);
+  --shadow-popover:
+    0 18px 44px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-modal: 0 40px 90px rgb(0 0 0 / 0.6);
+  --shadow-window: 0 40px 90px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-press: inset 0 1px 3px rgb(0 0 0 / 0.22);
+
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-meter: rdmeter 2.4s ease-in-out infinite;
+  --animate-pulse-dot: rdpulse 1.6s ease-in-out infinite;
+
+  @keyframes rdmeter {
+    0% {
+      width: 32%;
+    }
+    22% {
+      width: 71%;
+    }
+    44% {
+      width: 48%;
+    }
+    66% {
+      width: 83%;
+    }
+    88% {
+      width: 39%;
+    }
+    100% {
+      width: 32%;
+    }
+  }
+
+  @keyframes rdpulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
 }
 
-@custom-variant dark ([data-theme="dark"] &);
-
-[data-theme="dark"] {
-  --color-ink: oklch(96% 0.014 92);
-  --color-paper: oklch(14% 0.026 162);
-  --color-muted: oklch(70% 0.02 153);
-  --color-panel: oklch(19% 0.032 162);
-  --color-panel-warm: oklch(23% 0.028 92);
-  --color-line: oklch(32% 0.026 153);
+/* Diagonal hatch used behind drop targets and empty media slots. */
+@utility bg-hatch {
+  background: repeating-linear-gradient(135deg, #252220 0 8px, #201e1c 8px 16px);
 }
 
 @layer base {
@@ -68,9 +240,9 @@
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
-    background-color: var(--color-paper);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
+    background-color: var(--color-canvas);
+    color: var(--color-fg);
+    font-family: var(--font-ui);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -85,8 +257,12 @@
   }
 
   a {
-    color: inherit;
+    color: var(--color-accent);
     text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-accent-link-hover);
   }
 
   button,
@@ -95,7 +271,45 @@
   }
 
   ::selection {
-    background-color: var(--color-dock-200);
-    color: var(--color-ink);
+    background-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
+    color: var(--color-fg);
+  }
+}
+
+/*
+  The press feel is one shared recipe: the surface sinks, darkens, and takes an
+  inset shadow, so the light travels down with it. Applied by every pressable
+  primitive in @reeldock/ui.
+
+  Both directions use the same decelerating curve — no overshoot. A springy
+  curve here reads as a wobble on release, because the button rebounds past its
+  resting size while the text is still settling. Shadow is transitioned
+  alongside transform so the raised shadow fades into the inset one instead of
+  snapping, and the scale stays shallow enough not to shimmer type.
+*/
+.rd-press {
+  transition:
+    transform 0.2s var(--ease-glide),
+    box-shadow 0.2s var(--ease-glide),
+    filter 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+}
+
+.rd-press:not(:disabled):active {
+  transform: scale(0.975) translateZ(0);
+  filter: brightness(0.96);
+  box-shadow: var(--shadow-press);
+  transition-duration: 0.09s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-press,
+  .rd-press:not(:disabled):active {
+    transition-duration: 0.01ms;
+    transform: none;
   }
 }

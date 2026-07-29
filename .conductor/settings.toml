@@ -15,6 +15,11 @@ available_in = [ "local", "cloud" ]
 command = "bun run dev:marketing"
 icon = "globe"
 
+[scripts.run.ui_preview]
+available_in = [ "local", "cloud" ]
+command = "bun run dev:ui-preview"
+icon = "palette"
+
 [scripts.run.type_check]
 available_in = [ "local", "cloud" ]
 command = "bun run type-check"

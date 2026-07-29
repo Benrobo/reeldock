@@ -1,0 +1,5 @@
+**/routeTree.gen.ts
+bun.lock
+dist/
+.next/
+.turbo/
