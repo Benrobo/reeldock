@@ -10,6 +10,7 @@ private final class PreviewSurface {
   let overlay: NSView
   let previewLayer: AVCaptureVideoPreviewLayer
   var audioPreviewOutput: AVCaptureAudioPreviewOutput?
+  var movieOutput: AVCaptureMovieFileOutput?
 
   init(session: AVCaptureSession, overlay: NSView, previewLayer: AVCaptureVideoPreviewLayer) {
     self.session = session
@@ -134,6 +135,7 @@ final class PreviewManager {
     overlay.layer?.addSublayer(previewLayer)
 
     let surface = PreviewSurface(session: session, overlay: overlay, previewLayer: previewLayer)
+    installMovieRecorderOutput(surface)
     if id == "phone" {
       installMutedAudioMonitor(surface)
     }
@@ -181,16 +183,30 @@ final class PreviewManager {
     surface.audioPreviewOutput = output
   }
 
+  private func installMovieRecorderOutput(_ surface: PreviewSurface) {
+    // Attach the file output while the preview session is first built, before it starts running.
+    // Adding this output later during Record reconfigures the live session and can blank preview video.
+    // Recording can then start writing to a URL without changing the session graph.
+    let output = AVCaptureMovieFileOutput()
+    output.movieFragmentInterval = CMTime(seconds: 2, preferredTimescale: 600)
+    guard surface.session.canAddOutput(output) else { return }
+    surface.session.addOutput(output)
+    surface.movieOutput = output
+  }
+
+  private func hasDevice(_ surface: PreviewSurface, uniqueId: String) -> Bool {
+    return surface.session.inputs.contains { input in
+      guard let deviceInput = input as? AVCaptureDeviceInput else { return false }
+      return deviceInput.device.uniqueID == uniqueId
+    }
+  }
+
   func startAudioMonitor(id: String, uniqueId: String, volume: Float) -> Bool {
     // This monitors captured phone audio live through the Mac output device.
     // It does not write media; phone audio is still recorded inside phone.mov by the file output.
     // Keeping monitor output separate lets users hear demos without changing source files.
     guard let surface = surfaces[id] else { return false }
-    let hasDevice = surface.session.inputs.contains { input in
-      guard let deviceInput = input as? AVCaptureDeviceInput else { return false }
-      return deviceInput.device.uniqueID == uniqueId
-    }
-    guard hasDevice else { return false }
+    guard hasDevice(surface, uniqueId: uniqueId) else { return false }
 
     if let existing = surface.audioPreviewOutput {
       existing.volume = volume
@@ -212,16 +228,15 @@ final class PreviewManager {
     output.volume = 0
   }
 
-  func recordingSession(id: String, uniqueId: String) -> AVCaptureSession? {
-    // Recording reuses the live preview session when possible.
-    // That avoids opening the same camera/phone twice while the preview is visible.
-    // The uniqueId check prevents accidentally recording from a stale or wrong device.
-    guard let surface = surfaces[id] else { return nil }
-    let hasDevice = surface.session.inputs.contains { input in
-      guard let deviceInput = input as? AVCaptureDeviceInput else { return false }
-      return deviceInput.device.uniqueID == uniqueId
-    }
-    return hasDevice ? surface.session : nil
+  func recordingMovieOutput(id: String, uniqueId: String) -> (
+    session: AVCaptureSession, output: AVCaptureMovieFileOutput
+  )? {
+    // Recording should reuse the preview's already-attached movie output.
+    // That keeps the native session topology stable when the user presses Record.
+    // If this returns nil, recording falls back to a standalone capture session.
+    guard let surface = surfaces[id], hasDevice(surface, uniqueId: uniqueId) else { return nil }
+    guard let output = surface.movieOutput else { return nil }
+    return (surface.session, output)
   }
 }
 

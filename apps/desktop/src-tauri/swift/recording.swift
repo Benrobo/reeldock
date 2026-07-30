@@ -57,6 +57,7 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
   let session: AVCaptureSession
   let output: AVCaptureFileOutput
   let ownsSession: Bool
+  let removesOutputOnCleanup: Bool
   private let finishedSemaphore = DispatchSemaphore(value: 0)
   private var lastState = "planned"
   private var lastError: String?
@@ -65,13 +66,14 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
 
   init(
     kind: String, filePath: String, session: AVCaptureSession, output: AVCaptureFileOutput,
-    ownsSession: Bool
+    ownsSession: Bool, removesOutputOnCleanup: Bool
   ) {
     self.kind = kind
     self.filePath = filePath
     self.session = session
     self.output = output
     self.ownsSession = ownsSession
+    self.removesOutputOnCleanup = removesOutputOnCleanup
   }
 
   func start(recordingStartedAt: Date) {
@@ -147,7 +149,7 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
   func cleanup() {
     if ownsSession {
       session.stopRunning()
-    } else if session.outputs.contains(output) {
+    } else if removesOutputOnCleanup && session.outputs.contains(output) {
       session.beginConfiguration()
       session.removeOutput(output)
       session.commitConfiguration()
@@ -301,17 +303,19 @@ private final class NativeRecordingManager {
       }
       session.addOutput(output)
       return NativeRecordingTrack(
-        kind: source.kind, filePath: file.path, session: session, output: output, ownsSession: true)
+        kind: source.kind, filePath: file.path, session: session, output: output,
+        ownsSession: true, removesOutputOnCleanup: true)
     }
 
-    let existingSession = PreviewManager.shared.recordingSession(
+    if let previewOutput = PreviewManager.shared.recordingMovieOutput(
       id: source.kind, uniqueId: source.uniqueId)
-    let session: AVCaptureSession
-    if let existingSession {
-      session = existingSession
-    } else {
-      session = try makeStandaloneSession(device: device, kind: source.kind)
+    {
+      return NativeRecordingTrack(
+        kind: source.kind, filePath: file.path, session: previewOutput.session,
+        output: previewOutput.output, ownsSession: false, removesOutputOnCleanup: false)
     }
+
+    let session = try makeStandaloneSession(device: device, kind: source.kind)
     let output = AVCaptureMovieFileOutput()
     output.movieFragmentInterval = CMTime(seconds: 2, preferredTimescale: 600)
     session.beginConfiguration()
@@ -325,7 +329,7 @@ private final class NativeRecordingManager {
     session.commitConfiguration()
     return NativeRecordingTrack(
       kind: source.kind, filePath: file.path, session: session, output: output,
-      ownsSession: existingSession == nil)
+      ownsSession: true, removesOutputOnCleanup: true)
   }
 
   private func makeStandaloneSession(device: AVCaptureDevice, kind: String) throws -> AVCaptureSession {
