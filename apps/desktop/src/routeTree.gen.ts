@@ -14,7 +14,6 @@ import { Route as DevtoolsRouteImport } from './routes/devtools'
 import { Route as EditRouteImport } from './routes/edit'
 import { Route as PermissionsRouteImport } from './routes/permissions'
 import { Route as PreferencesRouteImport } from './routes/preferences'
-import { Route as RecordRouteImport } from './routes/record'
 import { Route as SetupRouteImport } from './routes/setup'
 
 const IndexRoute = IndexRouteImport.update({
@@ -42,11 +41,6 @@ const PreferencesRoute = PreferencesRouteImport.update({
   path: '/preferences',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RecordRoute = RecordRouteImport.update({
-  id: '/record',
-  path: '/record',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
@@ -59,7 +53,6 @@ export interface FileRoutesByFullPath {
   '/edit': typeof EditRoute
   '/permissions': typeof PermissionsRoute
   '/preferences': typeof PreferencesRoute
-  '/record': typeof RecordRoute
   '/setup': typeof SetupRoute
 }
 export interface FileRoutesByTo {
@@ -68,7 +61,6 @@ export interface FileRoutesByTo {
   '/edit': typeof EditRoute
   '/permissions': typeof PermissionsRoute
   '/preferences': typeof PreferencesRoute
-  '/record': typeof RecordRoute
   '/setup': typeof SetupRoute
 }
 export interface FileRoutesById {
@@ -78,28 +70,14 @@ export interface FileRoutesById {
   '/edit': typeof EditRoute
   '/permissions': typeof PermissionsRoute
   '/preferences': typeof PreferencesRoute
-  '/record': typeof RecordRoute
   '/setup': typeof SetupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/devtools'
-    | '/edit'
-    | '/permissions'
-    | '/preferences'
-    | '/record'
-    | '/setup'
+    '/' | '/devtools' | '/edit' | '/permissions' | '/preferences' | '/setup'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/devtools'
-    | '/edit'
-    | '/permissions'
-    | '/preferences'
-    | '/record'
-    | '/setup'
+  to: '/' | '/devtools' | '/edit' | '/permissions' | '/preferences' | '/setup'
   id:
     | '__root__'
     | '/'
@@ -107,7 +85,6 @@ export interface FileRouteTypes {
     | '/edit'
     | '/permissions'
     | '/preferences'
-    | '/record'
     | '/setup'
   fileRoutesById: FileRoutesById
 }
@@ -117,7 +94,6 @@ export interface RootRouteChildren {
   EditRoute: typeof EditRoute
   PermissionsRoute: typeof PermissionsRoute
   PreferencesRoute: typeof PreferencesRoute
-  RecordRoute: typeof RecordRoute
   SetupRoute: typeof SetupRoute
 }
 
@@ -158,13 +134,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PreferencesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/record': {
-      id: '/record'
-      path: '/record'
-      fullPath: '/record'
-      preLoaderRoute: typeof RecordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/setup': {
       id: '/setup'
       path: '/setup'
@@ -181,7 +150,6 @@ const rootRouteChildren: RootRouteChildren = {
   EditRoute: EditRoute,
   PermissionsRoute: PermissionsRoute,
   PreferencesRoute: PreferencesRoute,
-  RecordRoute: RecordRoute,
   SetupRoute: SetupRoute,
 }
 export const routeTree = rootRouteImport

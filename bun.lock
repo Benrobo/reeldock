@@ -15,6 +15,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@benrobo/iconary": "^0.2.0",
+        "@hookraft/use-sound": "^0.1.0",
         "@reeldock/devtools": "workspace:*",
         "@reeldock/project-schema": "workspace:*",
         "@reeldock/shared": "workspace:*",
@@ -280,6 +281,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.25.12", "", { "os": "win32", "cpu": "ia32" }, "sha512-HkqnmmBoCbCwxUKKNPBixiWDGCpQGVsrQfJoVGYLPT41XWF8lHuE5N6WhVia2n4o5QK5M4tYr21827fNhi4byQ=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
+
+    "@hookraft/use-sound": ["@hookraft/use-sound@0.1.0", "", { "peerDependencies": { "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-MEBCSHNKN2sc6OM6Z4cb3VICKw5/l2PxONwWPm6aX0RoVBmJbDvwJLjE6UKWF0ZXbxltQfqsAgzJpGvb9m4lCw=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

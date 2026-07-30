@@ -8,4 +8,8 @@ export const projectFilesService = {
       docJson: JSON.stringify(doc, null, 2),
     });
   },
+
+  async revealProjectInFinder(path: string) {
+    await invoke("reveal_project_in_finder", { path });
+  },
 };

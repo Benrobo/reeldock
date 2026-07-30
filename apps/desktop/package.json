@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@benrobo/iconary": "^0.2.0",
+    "@hookraft/use-sound": "^0.1.0",
     "@reeldock/devtools": "workspace:*",
     "@reeldock/project-schema": "workspace:*",
     "@reeldock/shared": "workspace:*",

@@ -33,6 +33,62 @@ private final class PreviewHostView: NSView {
   }
 }
 
+
+// This draws a black background with a semi-transparent countdown number.
+// It's layered above the preview surface and animated when recording starts.
+private final class CountdownOverlayView: NSView {
+  var value: String {
+    didSet {
+      needsDisplay = true
+    }
+  }
+
+  init(value: String, frame: NSRect) {
+    self.value = value
+    super.init(frame: frame)
+    wantsLayer = true
+    layer?.backgroundColor = NSColor.clear.cgColor
+    layer?.zPosition = 10_000
+    autoresizingMask = [.width, .height]
+  }
+
+  required init?(coder: NSCoder) {
+    return nil
+  }
+
+  override var isFlipped: Bool {
+    return true
+  }
+
+  override func hitTest(_ point: NSPoint) -> NSView? {
+    return nil
+  }
+
+  override func draw(_ dirtyRect: NSRect) {
+    NSColor.black.withAlphaComponent(0.36).setFill()
+    bounds.fill()
+
+    let shadow = NSShadow()
+    shadow.shadowBlurRadius = 28
+    shadow.shadowOffset = NSSize(width: 0, height: -12)
+    shadow.shadowColor = NSColor.black.withAlphaComponent(0.6)
+    let attributes: [NSAttributedString.Key: Any] = [
+      .font: NSFont.monospacedDigitSystemFont(ofSize: 132, weight: .semibold),
+      .foregroundColor: NSColor(calibratedRed: 1.0, green: 0.87, blue: 0.84, alpha: 1.0),
+      .shadow: shadow,
+    ]
+    let text = NSAttributedString(string: value, attributes: attributes)
+    let size = text.size()
+    let rect = NSRect(
+      x: (bounds.width - size.width) / 2,
+      y: (bounds.height - size.height) / 2,
+      width: size.width,
+      height: size.height
+    )
+    text.draw(in: rect)
+  }
+}
+
 final class PreviewManager {
   static let shared = PreviewManager()
 
@@ -106,6 +162,18 @@ final class PreviewManager {
     surface.session.stopRunning()
     surface.overlay.removeFromSuperview()
   }
+
+  func recordingSession(id: String, uniqueId: String) -> AVCaptureSession? {
+    // Recording reuses the live preview session when possible.
+    // That avoids opening the same camera/phone twice while the preview is visible.
+    // The uniqueId check prevents accidentally recording from a stale or wrong device.
+    guard let surface = surfaces[id] else { return nil }
+    let hasDevice = surface.session.inputs.contains { input in
+      guard let deviceInput = input as? AVCaptureDeviceInput else { return false }
+      return deviceInput.device.uniqueID == uniqueId
+    }
+    return hasDevice ? surface.session : nil
+  }
 }
 
 private func bezelWidth(_ rect: NSRect) -> CGFloat {
@@ -125,10 +193,22 @@ private func findWebView(_ view: NSView) -> NSView? {
 }
 
 private let previewHostIdentifier = NSUserInterfaceItemIdentifier("reeldock.preview.host")
+private let countdownOverlayIdentifier = NSUserInterfaceItemIdentifier("reeldock.preview.countdown")
+
+private func previewAnchor(_ window: NSWindow) -> NSView? {
+  guard let content = window.contentView else { return nil }
+  return findWebView(content) ?? content
+}
+
+private func countdownAnchor(_ window: NSWindow) -> NSView? {
+  return window.contentView
+}
 
 private func previewHost(_ window: NSWindow) -> NSView? {
-  guard let content = window.contentView else { return nil }
-  let anchor = findWebView(content) ?? content
+  // Native previews are AppKit views layered above the Tauri webview.
+  // We create one transparent host per window and reuse it for phone/webcam surfaces.
+  // React sends CSS rectangles; this host gives Swift a stable native coordinate space.
+  guard let anchor = previewAnchor(window) else { return nil }
 
   if let existing = anchor.subviews.first(where: { $0.identifier == previewHostIdentifier }) {
     return existing
@@ -140,6 +220,28 @@ private func previewHost(_ window: NSWindow) -> NSView? {
   host.wantsLayer = true
   anchor.addSubview(host)
   return host
+}
+
+private func setCountdownOverlay(_ window: NSWindow, value: String?) {
+  guard let anchor = countdownAnchor(window) else { return }
+  let existing = anchor.subviews.first(where: { $0.identifier == countdownOverlayIdentifier })
+    as? CountdownOverlayView
+
+  guard let value, !value.isEmpty else {
+    existing?.removeFromSuperview()
+    return
+  }
+
+  if let existing {
+    existing.value = value
+    existing.frame = anchor.bounds
+    existing.needsDisplay = true
+    return
+  }
+
+  let overlay = CountdownOverlayView(value: value, frame: anchor.bounds)
+  overlay.identifier = countdownOverlayIdentifier
+  anchor.addSubview(overlay, positioned: .above, relativeTo: nil)
 }
 
 private func frameInView(_ view: NSView, _ x: Double, _ y: Double, _ w: Double, _ h: Double)
@@ -200,6 +302,9 @@ private func dumpTree(_ view: NSView, depth: Int) {
 }
 
 private func onMain(_ work: @escaping () -> Void) {
+  // AppKit views must be created and updated on the main thread.
+  // Rust commands may enter Swift from background threads, so this helper hops safely.
+  // If already on main, it runs immediately to avoid dispatching unnecessarily.
   if Thread.isMainThread {
     work()
   } else {
@@ -263,5 +368,18 @@ public func reeldock_stop_preview(_ surfaceId: UnsafePointer<CChar>?) {
   let id = String(cString: surfaceId)
   onMain {
     PreviewManager.shared.stop(id: id)
+  }
+}
+
+@_cdecl("reeldock_set_preview_countdown")
+public func reeldock_set_preview_countdown(
+  _ windowPtr: UnsafeMutableRawPointer?,
+  _ valuePtr: UnsafePointer<CChar>?
+) {
+  guard let windowPtr else { return }
+  let value = valuePtr.map { String(cString: $0) }
+  onMain {
+    let window = Unmanaged<NSWindow>.fromOpaque(windowPtr).takeUnretainedValue()
+    setCountdownOverlay(window, value: value)
   }
 }

@@ -5,7 +5,11 @@ use std::process::Command;
 fn main() {
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR is not set");
     let out_path = PathBuf::from(&out_dir);
-    let swift_sources = ["swift/capture.swift", "swift/preview.swift"];
+    let swift_sources = [
+        "swift/capture.swift",
+        "swift/preview.swift",
+        "swift/recording.swift",
+    ];
 
     for source in swift_sources {
         println!("cargo:rerun-if-changed={source}");

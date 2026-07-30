@@ -4,6 +4,9 @@ import CoreMediaIO
 import Foundation
 
 private func enableScreenCaptureDevices() {
+  // iPhone mirroring/capture can appear through CoreMediaIO screen capture devices.
+  // This opt-in tells macOS to expose those external devices to AVFoundation discovery.
+  // We call it before scans so plugged-in phones are visible as capture sources.
   var address = CMIOObjectPropertyAddress(
     mSelector: CMIOObjectPropertySelector(kCMIOHardwarePropertyAllowScreenCaptureDevices),
     mScope: CMIOObjectPropertyScope(kCMIOObjectPropertyScopeGlobal),
@@ -90,6 +93,113 @@ private func microphoneSources() -> [[String: Any]] {
   return devices.map { source("microphone", $0) }
 }
 
+// This tracks microphone levels in real time and exposes them as JSON.
+// It uses AVFoundation's AVCaptureAudioDataOutput to capture audio samples.
+// The sample buffer delegate receives these in a background thread and updates levels.
+// The UI can poll this JSON to display the current microphone level and activity.
+private final class MicrophoneMeterManager: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
+  static let shared = MicrophoneMeterManager()
+
+  private let queue = DispatchQueue(label: "reeldock.microphone-meter")
+  private let lock = NSLock()
+  private var session: AVCaptureSession?
+  private var output: AVCaptureAudioDataOutput?
+  private var uniqueId: String?
+  private var level = 0.0
+  private var peak = 0.0
+  private var lastSampleAt: Date?
+
+  func start(uniqueId requestedUniqueId: String) throws {
+    if uniqueId == requestedUniqueId, session != nil {
+      return
+    }
+
+    stop()
+
+    guard let device = AVCaptureDevice(uniqueID: requestedUniqueId) else {
+      throw NSError(domain: "ReelDockCapture", code: 20, userInfo: [
+        NSLocalizedDescriptionKey: "Selected microphone is no longer available."
+      ])
+    }
+
+    let nextSession = AVCaptureSession()
+    nextSession.sessionPreset = .high
+    let input = try AVCaptureDeviceInput(device: device)
+    guard nextSession.canAddInput(input) else {
+      throw NSError(domain: "ReelDockCapture", code: 21, userInfo: [
+        NSLocalizedDescriptionKey: "Could not use selected microphone for input metering."
+      ])
+    }
+    nextSession.addInput(input)
+
+    let nextOutput = AVCaptureAudioDataOutput()
+    guard nextSession.canAddOutput(nextOutput) else {
+      throw NSError(domain: "ReelDockCapture", code: 22, userInfo: [
+        NSLocalizedDescriptionKey: "Could not read selected microphone level."
+      ])
+    }
+    nextSession.addOutput(nextOutput)
+    nextOutput.setSampleBufferDelegate(self, queue: queue)
+
+    lock.lock()
+    session = nextSession
+    output = nextOutput
+    uniqueId = requestedUniqueId
+    level = 0
+    peak = 0
+    lastSampleAt = nil
+    lock.unlock()
+
+    DispatchQueue.global(qos: .userInitiated).async {
+      nextSession.startRunning()
+    }
+  }
+
+  func stop() {
+    lock.lock()
+    let oldSession = session
+    let oldOutput = output
+    session = nil
+    output = nil
+    uniqueId = nil
+    level = 0
+    peak = 0
+    lastSampleAt = nil
+    lock.unlock()
+
+    oldOutput?.setSampleBufferDelegate(nil, queue: nil)
+    oldSession?.stopRunning()
+  }
+
+  func snapshot() -> [String: Any] {
+    lock.lock()
+    let seenRecently = lastSampleAt.map { Date().timeIntervalSince($0) < 1.0 } ?? false
+    let result: [String: Any] = [
+      "active": seenRecently,
+      "level": seenRecently ? level : 0,
+      "peak": seenRecently ? peak : 0,
+      "uniqueId": uniqueId ?? NSNull(),
+    ]
+    lock.unlock()
+    return result
+  }
+
+  func captureOutput(
+    _ output: AVCaptureOutput,
+    didOutput sampleBuffer: CMSampleBuffer,
+    from connection: AVCaptureConnection
+  ) {
+    let power = connection.audioChannels.map(\.averagePowerLevel).max() ?? -120
+    let normalized = max(0, min(1, (Double(power) + 60) / 60))
+
+    lock.lock()
+    level = (level * 0.65) + (normalized * 0.35)
+    peak = max(level, peak * 0.92)
+    lastSampleAt = Date()
+    lock.unlock()
+  }
+}
+
 private func source(_ kind: String, _ device: AVCaptureDevice) -> [String: Any] {
   var result: [String: Any] = [
     "id": "\(kind):\(device.uniqueID)",
@@ -111,19 +221,27 @@ private func source(_ kind: String, _ device: AVCaptureDevice) -> [String: Any] 
   return result
 }
 
+private func copyJsonObject(_ object: Any, fallback: String) -> UnsafeMutablePointer<CChar>? {
+  guard JSONSerialization.isValidJSONObject(object),
+    let data = try? JSONSerialization.data(withJSONObject: object),
+    let json = String(data: data, encoding: .utf8)
+  else {
+    return strdup(fallback)
+  }
+  return strdup(json)
+}
+
 @_cdecl("reeldock_copy_capture_sources_json")
 public func reeldock_copy_capture_sources_json() -> UnsafeMutablePointer<CChar>? {
+  // Rust cannot receive Swift arrays directly through the C boundary.
+  // Serialize the sources to JSON and return a duplicated C string instead.
+  // Rust is responsible for calling reeldock_free_string after reading this pointer.
   enableScreenCaptureDevices()
 
   var sources = videoSources()
   sources.append(contentsOf: microphoneSources())
 
-  guard let data = try? JSONSerialization.data(withJSONObject: sources),
-    let json = String(data: data, encoding: .utf8)
-  else {
-    return strdup("[]")
-  }
-  return strdup(json)
+  return copyJsonObject(sources, fallback: "[]")
 }
 
 @_cdecl("reeldock_prepare_capture")
@@ -152,15 +270,40 @@ public func reeldock_copy_all_devices_json() -> UnsafeMutablePointer<CChar>? {
     ]
   }
 
-  guard let data = try? JSONSerialization.data(withJSONObject: devices),
-    let json = String(data: data, encoding: .utf8)
-  else {
-    return strdup("[]")
+  return copyJsonObject(devices, fallback: "[]")
+}
+
+@_cdecl("reeldock_start_microphone_meter_json")
+public func reeldock_start_microphone_meter_json(
+  _ uniqueIdPtr: UnsafePointer<CChar>?
+) -> UnsafeMutablePointer<CChar>? {
+  guard let uniqueIdPtr else {
+    return copyJsonObject(["ok": false, "error": "Microphone id was missing."], fallback: "{}")
   }
-  return strdup(json)
+
+  do {
+    try MicrophoneMeterManager.shared.start(uniqueId: String(cString: uniqueIdPtr))
+    return copyJsonObject(["ok": true], fallback: "{}")
+  } catch {
+    return copyJsonObject(["ok": false, "error": error.localizedDescription], fallback: "{}")
+  }
+}
+
+@_cdecl("reeldock_stop_microphone_meter_json")
+public func reeldock_stop_microphone_meter_json() -> UnsafeMutablePointer<CChar>? {
+  MicrophoneMeterManager.shared.stop()
+  return copyJsonObject(["ok": true], fallback: "{}")
+}
+
+@_cdecl("reeldock_copy_microphone_meter_json")
+public func reeldock_copy_microphone_meter_json() -> UnsafeMutablePointer<CChar>? {
+  return copyJsonObject(MicrophoneMeterManager.shared.snapshot(), fallback: "{}")
 }
 
 @_cdecl("reeldock_free_string")
 public func reeldock_free_string(_ pointer: UnsafeMutablePointer<CChar>?) {
+  // All JSON strings returned to Rust are created with strdup().
+  // That means Rust must eventually hand the pointer back here for free().
+  // Keeping this function shared avoids leaking every native JSON response.
   free(pointer)
 }

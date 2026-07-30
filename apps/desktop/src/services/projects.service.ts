@@ -1,6 +1,14 @@
 import { desc, eq } from "drizzle-orm";
 import type { CaptureSourceKind } from "@reeldock/shared";
-import { localDb, projects, sourceTracks, exportJobs, type ProjectRow } from "@/db/local";
+import {
+  createProjectWithSourcesTransaction,
+  deleteProjectTransaction,
+  localDb,
+  projects,
+  sourceTracks,
+  exportJobs,
+  type ProjectRow,
+} from "@/db/local";
 import { REELDOCK_RECORDINGS_DIR } from "@/constants/paths";
 import { DEFAULT_PROJECT_NAME } from "@/constants/recording";
 import { DEFAULT_DOC, projectDocSchema, type ProjectDoc } from "@/modules/project";
@@ -141,28 +149,60 @@ export const projectsService = {
       lastOpenedAt: timestamp,
     };
 
-    const db = await localDb();
-    await db.transaction(async (tx) => {
-      await tx.insert(projects).values(toRow(project));
-      if (input.sources.length) {
-        await tx.insert(sourceTracks).values(
-          input.sources.map((source) => ({
-            id: id("source"),
-            projectId: project.id,
-            kind: source.kind,
-            label: source.label,
-            filePath: null,
-            state: "planned",
-            enabled: source.enabled,
-            startOffsetMs: 0,
-            durationMs: 0,
-            createdAt: timestamp,
-          }))
-        );
-      }
-    });
+    await createProjectWithSourcesTransaction(
+      toRow(project),
+      input.sources.map((source) => ({
+        id: id("source"),
+        projectId: project.id,
+        kind: source.kind,
+        label: source.label,
+        filePath: null,
+        state: "planned",
+        enabled: source.enabled,
+        startOffsetMs: 0,
+        durationMs: 0,
+        createdAt: timestamp,
+      }))
+    );
     await projectFilesService.writeProjectDocument(project.path, project.doc);
     return project;
+  },
+
+  async duplicate(project: ProjectSummary) {
+    const timestamp = now();
+    const projectId = id("project");
+    const copy: ProjectSummary = {
+      ...project,
+      id: projectId,
+      name: `${project.name} copy`,
+      path: pathFor(`${project.name} copy`, projectId),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      lastOpenedAt: timestamp,
+    };
+    const tracks = await this.listSourceTracks(project.id);
+
+    await createProjectWithSourcesTransaction(
+      toRow(copy),
+      tracks.map((track) => ({
+        id: id("source"),
+        projectId: copy.id,
+        kind: track.kind,
+        label: track.label,
+        filePath: track.filePath,
+        state: track.state,
+        enabled: track.enabled,
+        startOffsetMs: track.startOffsetMs,
+        durationMs: track.durationMs,
+        createdAt: timestamp,
+      }))
+    );
+    await projectFilesService.writeProjectDocument(copy.path, copy.doc);
+    return copy;
+  },
+
+  async delete(projectId: string) {
+    await deleteProjectTransaction(projectId);
   },
 
   async save(project: ProjectSummary) {

@@ -5,7 +5,7 @@ import {
   SmartPhone01Icon,
   VolumeHighIcon,
 } from "@benrobo/iconary/core/duotone-rounded";
-import { cn, GroupLabel, PopupSelect, Switch } from "@reeldock/ui";
+import { cn, GroupLabel, Meter, PopupSelect, Switch } from "@reeldock/ui";
 import { ColorIcon } from "@/components/color-icon";
 import type { ColorIconTone } from "@/components/color-icon";
 import type { CaptureSource } from "@/modules/capture";
@@ -49,9 +49,12 @@ type SetupSourceControlsProps = {
   phoneSourceId?: string;
   webcamSourceId?: string;
   microphoneSourceId?: string;
+  microphoneMeterActive?: boolean;
+  microphoneMeterLevel?: number;
   hasPhone: boolean;
   webcamRecordingEnabled: boolean;
   microphoneRecordingEnabled: boolean;
+  disabled?: boolean;
   onSelectSource: (source: CaptureSource) => void;
   onWebcamRecordingEnabledChange: (enabled: boolean) => void;
   onMicrophoneRecordingEnabledChange: (enabled: boolean) => void;
@@ -64,9 +67,12 @@ export function SetupSourceControls({
   phoneSourceId,
   webcamSourceId,
   microphoneSourceId,
+  microphoneMeterActive = false,
+  microphoneMeterLevel = 0,
   hasPhone,
   webcamRecordingEnabled,
   microphoneRecordingEnabled,
+  disabled = false,
   onSelectSource,
   onWebcamRecordingEnabledChange,
   onMicrophoneRecordingEnabledChange,
@@ -88,6 +94,7 @@ export function SetupSourceControls({
           emptyLabel="No camera found"
           kind="webcam"
           label="Camera"
+          locked={disabled}
           onEnabledChange={onWebcamRecordingEnabledChange}
           onSelectSource={onSelectSource}
           selectedSource={webcamSource}
@@ -98,6 +105,9 @@ export function SetupSourceControls({
           emptyLabel="No microphone found"
           kind="microphone"
           label="Mic"
+          locked={disabled}
+          meterActive={microphoneMeterActive}
+          meterLevel={microphoneMeterLevel}
           onEnabledChange={onMicrophoneRecordingEnabledChange}
           onSelectSource={onSelectSource}
           selectedSource={microphoneSource}
@@ -173,7 +183,10 @@ type SelectableSourceRowProps = {
   label: string;
   sources: CaptureSource[];
   selectedSource?: CaptureSource;
+  meterActive?: boolean;
+  meterLevel?: number;
   enabled: boolean;
+  locked: boolean;
   emptyLabel: string;
   onEnabledChange: (enabled: boolean) => void;
   onSelectSource: (source: CaptureSource) => void;
@@ -184,7 +197,10 @@ function SelectableSourceRow({
   label,
   sources,
   selectedSource,
+  meterActive = false,
+  meterLevel = 0,
   enabled,
+  locked,
   emptyLabel,
   onEnabledChange,
   onSelectSource,
@@ -196,7 +212,7 @@ function SelectableSourceRow({
       action={
         <Switch
           checked={hasSources && enabled}
-          disabled={!hasSources}
+          disabled={!hasSources || locked}
           label={label}
           onChange={onEnabledChange}
         />
@@ -208,7 +224,7 @@ function SelectableSourceRow({
       <PopupSelect
         ariaLabel={`${label} source`}
         className="min-w-0 flex-1"
-        disabled={!hasSources}
+        disabled={!hasSources || locked}
         onChange={(sourceId) => {
           const source = sources.find((item) => item.id === sourceId);
           if (source) onSelectSource(source);
@@ -217,7 +233,10 @@ function SelectableSourceRow({
           value: source.id,
           label: source.label,
           meta: sourceMeta(source),
-          trailing: source.kind === "microphone" ? <MiniMeter sourceId={source.id} /> : null,
+          trailing:
+            source.kind === "microphone" && source.id === selectedSource?.id ? (
+              <MiniMeter active={meterActive && enabled} value={meterLevel} />
+            ) : null,
           disabled: source.state !== "available",
         }))}
         placeholder={emptyLabel}
@@ -265,15 +284,8 @@ function StatusDot({ available }: { available: boolean }) {
   );
 }
 
-function MiniMeter({ sourceId }: { sourceId: string }) {
-  const value = 24 + (sourceId.length % 5) * 12;
-
+function MiniMeter({ active, value }: { active: boolean; value: number }) {
   return (
-    <span className="border-track-line bg-well block h-[7px] w-8 shrink-0 overflow-hidden rounded-full border">
-      <span
-        className="from-ok to-ok-meter-end block h-full rounded-full bg-linear-to-r"
-        style={{ width: `${value}%` }}
-      />
-    </span>
+    <Meter active={active} className="w-8 shrink-0" value={active ? value : 0} />
   );
 }

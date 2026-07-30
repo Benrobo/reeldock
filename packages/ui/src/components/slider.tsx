@@ -97,7 +97,18 @@ export function Slider({
   );
 }
 
-export function Meter({ className }: { className?: string }) {
+export function Meter({
+  active = true,
+  className,
+  value,
+}: {
+  active?: boolean;
+  className?: string;
+  value?: number;
+}) {
+  const measured = value !== undefined;
+  const width = measured ? `${Math.max(0, Math.min(1, value)) * 100}%` : undefined;
+
   return (
     <div
       className={cn(
@@ -105,7 +116,14 @@ export function Meter({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="animate-meter bg-linear-to-r from-ok to-ok-meter-end h-full" />
+      <div
+        className={cn(
+          "bg-linear-to-r from-ok to-ok-meter-end h-full transition-[width,opacity] duration-75",
+          !measured && active && "animate-meter",
+          !active && "opacity-35"
+        )}
+        style={measured ? { width } : undefined}
+      />
     </div>
   );
 }

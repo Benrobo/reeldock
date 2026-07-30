@@ -15,6 +15,7 @@ type CapturePreviewProps = {
   phoneUniqueId?: string;
   phoneDimensions?: { width?: number; height?: number };
   webcamUniqueId?: string;
+  recordingActive?: boolean;
   mirror?: boolean;
 };
 
@@ -22,6 +23,7 @@ export function CapturePreview({
   phoneUniqueId,
   phoneDimensions,
   webcamUniqueId,
+  recordingActive = false,
   mirror = true,
 }: CapturePreviewProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -46,8 +48,10 @@ export function CapturePreview({
   return (
     <div
       className={cn(
-        "box-border flex h-full w-full items-center justify-center p-12",
-        SETUP_PREVIEW_DEBUG && "bg-blue-500/10 outline outline-4 outline-blue-500"
+        "box-border flex h-full w-full items-center justify-center p-12 transition-transform duration-300 ease-out",
+        recordingActive ? "translate-y-5 scale-[.95]" : "translate-y-0 scale-100",
+        SETUP_PREVIEW_DEBUG &&
+          "bg-blue-500/10 outline outline-4 outline-blue-500"
       )}
       ref={hostRef}
     >
@@ -55,7 +59,8 @@ export function CapturePreview({
         <div
           className={cn(
             "relative flex h-full shrink-0 items-center justify-center overflow-hidden",
-            SETUP_PREVIEW_DEBUG && "bg-red-500/15 outline outline-4 outline-yellow-500"
+            SETUP_PREVIEW_DEBUG &&
+              "bg-red-500/15 outline outline-4 outline-yellow-500"
           )}
           style={{ aspectRatio: phoneAspect }}
         >
@@ -64,12 +69,15 @@ export function CapturePreview({
               "relative max-h-full max-w-full shrink-0",
               SETUP_PREVIEW_DEBUG && "outline outline-2 outline-yellow-300"
             )}
-            style={{ aspectRatio: phoneAspect, height: DEVICE_PREVIEW_TARGET_SIZE }}
+            style={{
+              aspectRatio: phoneAspect,
+              height: DEVICE_PREVIEW_TARGET_SIZE,
+            }}
           >
             {phoneUniqueId ? (
               <div className="h-full w-full" ref={phoneRef} />
             ) : (
-              <div className="h-full w-full rounded-[14%] border-[6px] border-black" />
+              <DevicePlaceholder />
             )}
           </div>
         </div>
@@ -78,7 +86,8 @@ export function CapturePreview({
           <div
             className={cn(
               "flex aspect-square h-[48%] shrink-0 items-center justify-center overflow-hidden",
-              SETUP_PREVIEW_DEBUG && "bg-green-500/15 outline outline-4 outline-green-500"
+              SETUP_PREVIEW_DEBUG &&
+                "bg-green-500/15 outline outline-4 outline-green-500"
             )}
           >
             <div
@@ -86,7 +95,11 @@ export function CapturePreview({
               ref={webcamRef}
               style={{ height: WEBCAM_PREVIEW_TARGET_SIZE }}
             >
-              <CameraBubble live mirrored={mirror} radius={LIVE_WEBCAM_PREVIEW_RADIUS} />
+              <CameraBubble
+                live
+                mirrored={mirror}
+                radius={LIVE_WEBCAM_PREVIEW_RADIUS}
+              />
             </div>
           </div>
         ) : null}
@@ -95,9 +108,23 @@ export function CapturePreview({
   );
 }
 
-function phoneAspectFromDimensions(dimensions?: { width?: number; height?: number }) {
+function DevicePlaceholder() {
+  return (
+    <div className="border-group-line bg-hatch grid h-full w-full place-items-center border">
+      <div className="text-fg-key font-ui-mono text-center text-[10px] font-semibold uppercase tracking-[0.12em]">
+        No device connected
+      </div>
+    </div>
+  );
+}
+
+function phoneAspectFromDimensions(dimensions?: {
+  width?: number;
+  height?: number;
+}) {
   if (!dimensions?.width || !dimensions.height) return DEFAULT_PHONE_ASPECT;
   return (
-    Math.min(dimensions.width, dimensions.height) / Math.max(dimensions.width, dimensions.height)
+    Math.min(dimensions.width, dimensions.height) /
+    Math.max(dimensions.width, dimensions.height)
   );
 }

@@ -41,13 +41,25 @@ type PopoverProps = {
   content: ReactNode;
   side?: PopoverSide;
   className?: string;
+  closeOnContentClick?: boolean;
 };
 
-export function Popover({ children, content, side = "bottom", className }: PopoverProps) {
+export function Popover({
+  children,
+  content,
+  side = "bottom",
+  className,
+  closeOnContentClick = false,
+}: PopoverProps) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setPosition(null);
+  }, []);
 
   const place = useCallback(() => {
     const popover = popoverRef.current;
@@ -109,10 +121,6 @@ export function Popover({ children, content, side = "bottom", className }: Popov
   useEffect(() => {
     if (!open) return;
 
-    const close = () => {
-      setOpen(false);
-      setPosition(null);
-    };
     const onPointerDown = (event: globalThis.PointerEvent) => {
       const target = event.target as Node;
       if (popoverRef.current?.contains(target)) return;
@@ -133,7 +141,7 @@ export function Popover({ children, content, side = "bottom", className }: Popov
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [open, place]);
+  }, [close, open, place]);
 
   const resolvedSide = position?.side ?? side;
   const offset = position ? position.arrow - 6 : 0;
@@ -158,6 +166,9 @@ export function Popover({ children, content, side = "bottom", className }: Popov
                 position ? "scale-100 opacity-100" : "scale-[0.96] opacity-0",
                 className
               )}
+              onClick={() => {
+                if (closeOnContentClick) close();
+              }}
               ref={popoverRef}
               style={{
                 left: position ? position.x : -9999,

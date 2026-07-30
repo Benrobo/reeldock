@@ -111,3 +111,5 @@ export function useSetupSources(sources: CaptureSource[]) {
     selectSource,
   };
 }
+
+export type SetupSourcesState = ReturnType<typeof useSetupSources>;
