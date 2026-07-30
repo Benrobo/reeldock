@@ -1,53 +1,18 @@
-use serde::Serialize;
+mod capture;
+mod preview;
+
+use capture::CaptureSource;
 use std::path::PathBuf;
 use tauri_plugin_sql::{Migration, MigrationKind};
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct CaptureSource {
-    id: String,
-    label: String,
-    kind: CaptureSourceKind,
-    state: CaptureSourceState,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "kebab-case")]
-enum CaptureSourceKind {
-    Phone,
-    Webcam,
-    Microphone,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "kebab-case")]
-enum CaptureSourceState {
-    Unavailable,
-    PermissionRequired,
+#[tauri::command]
+fn list_capture_sources() -> Vec<CaptureSource> {
+    capture::list_capture_sources()
 }
 
 #[tauri::command]
-fn list_capture_sources() -> Vec<CaptureSource> {
-    vec![
-        CaptureSource {
-            id: "iphone-usb".into(),
-            label: "iPhone USB capture".into(),
-            kind: CaptureSourceKind::Phone,
-            state: CaptureSourceState::Unavailable,
-        },
-        CaptureSource {
-            id: "facetime-camera".into(),
-            label: "Webcam".into(),
-            kind: CaptureSourceKind::Webcam,
-            state: CaptureSourceState::PermissionRequired,
-        },
-        CaptureSource {
-            id: "default-microphone".into(),
-            label: "Microphone".into(),
-            kind: CaptureSourceKind::Microphone,
-            state: CaptureSourceState::PermissionRequired,
-        },
-    ]
+fn list_all_capture_devices() -> serde_json::Value {
+    capture::list_all_devices()
 }
 
 #[tauri::command]
@@ -90,6 +55,8 @@ fn expand_project_path(path: &str) -> Result<PathBuf, String> {
 }
 
 fn main() {
+    capture::prepare();
+
     let migrations = vec![Migration {
         version: 1,
         description: "create_reeldock_local_tables",
@@ -106,8 +73,12 @@ fn main() {
         )
         .invoke_handler(tauri::generate_handler![
             list_capture_sources,
+            list_all_capture_devices,
             open_privacy_settings,
-            write_project_document
+            write_project_document,
+            preview::start_preview,
+            preview::set_preview_frame,
+            preview::stop_preview
         ])
         .run(tauri::generate_context!())
         .expect("failed to run ReelDock");

@@ -5,11 +5,15 @@
 ```text
 reeldock/
 ├── apps/
-│   └── desktop/             Tauri + React desktop app
+│   └── desktop/             Tauri + React desktop app (Swift capture module in src-tauri)
 │   └── marketing/           Next.js landing page
 ├── packages/
+│   ├── devtools/            Storage inspector UI
 │   ├── project-schema/      Zod schema for project.json
-│   └── shared/              Shared constants and TypeScript types
+│   ├── shared/              Shared constants and TypeScript types
+│   ├── tailwind-config/     Design tokens and the single stylesheet
+│   ├── ui/                  @reeldock/ui primitives
+│   └── ui-preview/          Primitive gallery
 ├── docs/                    PRD and planning docs
 ├── memory/                  Agent-readable project context
 └── .agents/                 Bundled agent skills
@@ -24,16 +28,18 @@ The highest-risk technical area is native capture, not the React editor.
 ## Runtime Model
 
 ```text
-React UI
+React UI  (controls, layout, metadata only)
   |
 Tauri commands and events
   |
 Rust coordinator
   |
-Native macOS capture and export helpers
+Swift capture module  (AVFoundation / CoreMediaIO, in-process, shares the app NSWindow)
 ```
 
-The React layer owns workflow state and editing controls. The Rust layer owns project directories, command orchestration, error translation, and native helper lifecycle. High-throughput media work stays native.
+The React layer owns workflow state and editing controls, and never touches raw media. There is no `getUserMedia` and no WebView `<video>` in the product path. The Rust layer owns project directories, command orchestration, error translation, and the capture-module lifecycle. All capture, preview, recording, and export are native.
+
+Capture decisions (see PRD sections 12 and 13): the iPhone screen is a CoreMediaIO USB screen-capture device (`kCMIOHardwarePropertyAllowScreenCaptureDevices`), captured only over cable with the phone trusted. Live preview is a native `AVCaptureVideoPreviewLayer` layered over the Tauri window at the canvas rectangle, not a bridged frame stream. Export composes the independent tracks with `AVMutableComposition` + `AVMutableVideoComposition` to H.264 MP4.
 
 The marketing app is separate from the desktop app so mainstream launch pages can evolve without pulling Tauri-only dependencies into the public web surface.
 

@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react(), tailwindcss()],
   clearScreen: false,
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": resolve(import.meta.dirname, "./src"),
     },

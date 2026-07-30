@@ -1,33 +1,38 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listCaptureSources } from "@/modules/capture/lib/bridge";
 import type { CaptureSource } from "@/modules/capture/types";
 
 type CaptureSourcesState = {
   sources: CaptureSource[];
   loading: boolean;
+  refresh: () => Promise<void>;
 };
 
+const POLL_INTERVAL_MS = 1500;
+
 export function useCaptureSources(): CaptureSourcesState {
-  const [state, setState] = useState<CaptureSourcesState>({
-    sources: [],
-    loading: true,
-  });
+  const [sources, setSources] = useState<CaptureSource[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    listCaptureSources()
-      .then((sources) => {
-        if (!cancelled) setState({ sources, loading: false });
-      })
-      .catch(() => {
-        if (!cancelled) setState({ sources: [], loading: false });
-      });
-
-    return () => {
-      cancelled = true;
-    };
+  const read = useCallback(async () => {
+    try {
+      setSources(await listCaptureSources());
+    } catch {
+      setSources([]);
+    }
   }, []);
 
-  return state;
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    await read();
+    setLoading(false);
+  }, [read]);
+
+  useEffect(() => {
+    void refresh();
+    const timer = setInterval(() => void read(), POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [refresh, read]);
+
+  return { sources, loading, refresh };
 }

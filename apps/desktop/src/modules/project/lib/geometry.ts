@@ -1,8 +1,8 @@
 import { LAYOUTS } from "@reeldock/shared";
+import { DEFAULT_PHONE_ASPECT } from "@/constants/preview";
 import type { ProjectDoc } from "../types";
 
 const SIZE_INDEX = { S: 0, M: 1, L: 2 } as const;
-const PHONE_ASPECT = 390 / 844;
 
 export type Placement = {
   phone: { x: number; y: number; h: number };
@@ -14,7 +14,7 @@ export function aspect(doc: ProjectDoc): number {
   return { "16:9": 16 / 9, "9:16": 9 / 16, "1:1": 1 }[doc.ratio] ?? 16 / 9;
 }
 
-export function compose(doc: ProjectDoc): Placement {
+export function compose(doc: ProjectDoc, phoneAspect = DEFAULT_PHONE_ASPECT): Placement {
   const a = aspect(doc);
   const meta = LAYOUTS[doc.layout];
   const padY = doc.pad / 100;
@@ -26,7 +26,7 @@ export function compose(doc: ProjectDoc): Placement {
   const gapX = meta.gap ? doc.gap / 100 / a : 0;
   const phoneIndex = SIZE_INDEX[doc.phoneSize];
   const camIndex = SIZE_INDEX[doc.camSize];
-  const phoneWidthFor = (h: number) => (h * PHONE_ASPECT) / a;
+  const phoneWidthFor = (h: number) => (h * phoneAspect) / a;
 
   if (doc.layout === "side") {
     const phoneHeight = height * [0.72, 0.86, 1][phoneIndex];
@@ -51,7 +51,7 @@ export function compose(doc: ProjectDoc): Placement {
     const columnW = Math.max(0.1, width - camW - gapX);
     const phoneHeight = Math.min(
       height * [0.6, 0.74, 0.88][phoneIndex],
-      (columnW * a) / PHONE_ASPECT
+      (columnW * a) / phoneAspect
     );
     const w = phoneWidthFor(phoneHeight);
     const camX = doc.swap ? x0 + width - camW : x0;
@@ -111,11 +111,15 @@ export type StageGeometry = {
   hasCam: boolean;
 };
 
-export function stageGeometry(doc: ProjectDoc, stage: { w: number; h: number }): StageGeometry {
+export function stageGeometry(
+  doc: ProjectDoc,
+  stage: { w: number; h: number },
+  phoneAspect = DEFAULT_PHONE_ASPECT
+): StageGeometry {
   const a = aspect(doc);
   const ch = Math.floor(Math.min(stage.h, stage.w / a));
   const cw = Math.round(ch * a);
-  const { phone, cam } = compose(doc);
+  const { phone, cam } = compose(doc, phoneAspect);
   const phoneHeight = phone.h * ch;
   const isBubble = LAYOUTS[doc.layout].cam === "bubble";
 
@@ -124,7 +128,7 @@ export function stageGeometry(doc: ProjectDoc, stage: { w: number; h: number }):
     ch,
     phoneLeft: Math.round(phone.x * cw),
     phoneTop: Math.round(phone.y * ch),
-    phoneWidth: Math.round(phoneHeight * PHONE_ASPECT),
+    phoneWidth: Math.round(phoneHeight * phoneAspect),
     phoneHeight: Math.round(phoneHeight),
     hasCam: Boolean(cam),
     camLeft: cam ? Math.round(cam.x * cw) : 0,

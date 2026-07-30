@@ -1,54 +1,47 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { cn } from "@reeldock/ui";
+import { DEVICE_FRAME_BORDER_RATIO, DEVICE_SCREEN_RADIUS_RATIO } from "@/constants/preview";
 
-export const PHONE_VIEWPORT = { width: 390, height: 844 } as const;
+export function deviceFrameMetrics(width: number, height: number, bezel: boolean) {
+  const border = bezel
+    ? Math.max(4, Math.round(Math.min(width, height) * DEVICE_FRAME_BORDER_RATIO))
+    : 0;
+  const innerRadius = Math.round(Math.min(width, height) * DEVICE_SCREEN_RADIUS_RATIO);
+  const outerRadius = innerRadius + border;
+  return { border, innerRadius, outerRadius };
+}
 
 type DeviceFrameProps = {
+  width: number;
   height: number;
-  radius: number;
   bezel: boolean;
+  frameRef?: Ref<HTMLDivElement>;
+  screenRef?: Ref<HTMLDivElement>;
   children?: ReactNode;
 };
 
-export function DeviceFrame({ height, radius, bezel, children }: DeviceFrameProps) {
-  const bezelWidth = Math.max(2, Math.round(height * 0.014));
-  const outerRadius = Math.round(height * (radius / 400) + bezelWidth);
-  const innerRadius = Math.max(1, outerRadius - bezelWidth);
-  const innerHeight = height - bezelWidth * 2;
-
-  const islandTop = Math.round(innerHeight * 0.016);
-  const islandWidth = Math.round(innerHeight * 0.121);
-  const islandHeight = Math.round(innerHeight * 0.0355);
-  const scale = innerHeight / PHONE_VIEWPORT.height;
+export function DeviceFrame({
+  width,
+  height,
+  bezel,
+  frameRef,
+  screenRef,
+  children,
+}: DeviceFrameProps) {
+  const { border, innerRadius, outerRadius } = deviceFrameMetrics(width, height, bezel);
 
   return (
     <div
-      className={cn(
-        "absolute inset-0 box-border",
-        bezel ? "bg-device-bezel shadow-device" : "bg-transparent"
-      )}
-      style={{ borderRadius: outerRadius, padding: bezel ? bezelWidth : 0 }}
+      className={cn("absolute inset-0 box-border", bezel ? "bg-device-bezel" : "")}
+      ref={frameRef}
+      style={{ borderRadius: outerRadius, padding: border }}
     >
       <div
-        className="bg-screen relative h-full w-full overflow-hidden"
+        className="relative h-full w-full overflow-hidden bg-red-500"
+        ref={screenRef}
         style={{ borderRadius: innerRadius }}
       >
-        <div
-          className="bg-screen text-screen-ink font-ui absolute left-1/2 top-1/2"
-          style={{
-            width: PHONE_VIEWPORT.width,
-            height: PHONE_VIEWPORT.height,
-            transform: `translate(-50%,-50%) scale(${scale})`,
-          }}
-        >
-          {children}
-        </div>
-        {bezel ? (
-          <div
-            className="bg-device-bezel absolute left-1/2 -translate-x-1/2 rounded-[99px]"
-            style={{ top: islandTop, width: islandWidth, height: islandHeight }}
-          />
-        ) : null}
+        {children}
       </div>
     </div>
   );

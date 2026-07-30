@@ -559,19 +559,21 @@ Normalised positions are recommended so layouts can adapt across canvas sizes.
 
 ## 12. Technical architecture
 
-ReelDock should separate the interface from the native media engine.
+ReelDock separates the interface from the native media engine. Capture, preview, recording, and export are native macOS work. The React interface never touches raw media: it renders controls and the layout editor, and reads or writes only metadata (device lists, project records, layout values, progress). There is no browser-based capture, no `getUserMedia`, and no WebView `<video>` in the product path.
 
 ```text
-Tauri + React interface
+Tauri + React interface  (controls, layout, metadata only)
         │
         │ commands and events
         ▼
 Rust application coordinator
         │
-        │ local IPC
+        │ C ABI, in-process (shares the app NSWindow)
         ▼
-Native macOS capture and rendering helper
+Swift capture module  (AVFoundation / CoreMediaIO)
 ```
+
+The Swift capture module is compiled into the app binary and called over a C ABI from the Rust coordinator. It runs in-process so it can attach a native preview layer to the same `NSWindow` Tauri owns. It is not a separate process and not a WebView.
 
 ### 12.1 Tauri and React
 
@@ -597,7 +599,7 @@ Responsible for:
 - Starting export jobs
 - Reporting progress to the interface
 
-### 12.3 Swift capture helper
+### 12.3 Swift capture module
 
 Responsible for:
 
@@ -610,47 +612,47 @@ Responsible for:
 - Native preview delivery
 - Recording recovery
 
-Expected Apple technologies:
+The iPhone screen is captured over USB as a CoreMediaIO screen-capture device, the same device QuickTime uses for "New Movie Recording." Those devices are hidden by default, so the module sets `kCMIOHardwarePropertyAllowScreenCaptureDevices` to `true` and then discovers the iPhone through `AVCaptureDeviceDiscoverySession`. The phone must be connected by cable, unlocked, and trusted; wireless capture is out of scope for the first release. The webcam and microphone are ordinary `AVCaptureDevice` inputs.
 
-- AVFoundation
-- CoreMediaIO
-- CoreMedia
-- VideoToolbox
-- AVAssetWriter
-- Core Image or Metal
+Each source is captured on its own `AVCaptureSession` input and written to its own file with native presentation timestamps, so the sources stay independent for editing. When the iPhone disconnects mid-recording, the module finalizes the files it has and reports the disconnection rather than corrupting the session.
 
-### 12.4 Export engine
+Apple technologies:
 
-Responsible for:
+- AVFoundation (`AVCaptureSession`, `AVCaptureDevice`, `AVCaptureMovieFileOutput` / `AVAssetWriter`)
+- CoreMediaIO (USB iPhone screen-capture device discovery)
+- CoreMedia (timestamps and sample buffers)
+- VideoToolbox (H.264 encoding)
+- Core Image or Metal (preview and composition rendering)
 
-- Reading all recorded tracks
-- Applying layout transformations
-- Applying masks and corner radii
-- Adding backgrounds
-- Adding device frames
-- Mixing audio
-- Rendering the final MP4
+### 12.4 Preview delivery
 
-For the MVP, export should remain local.
+Preview is a native `AVCaptureVideoPreviewLayer` (or a Metal-backed layer) hosted in an `NSView` layered over the Tauri window, positioned to match the on-screen canvas region. The React canvas leaves that region transparent and draws only the surrounding chrome, backgrounds, and overlays. The interface sends the canvas rectangle and layout to the native layer through commands whenever the layout changes; the native layer renders the live sources at that rectangle. Frame data never crosses the JavaScript bridge.
+
+### 12.5 Export engine
+
+Export composes the independently recorded tracks with AVFoundation's composition APIs:
+
+- `AVMutableComposition` assembles the phone, webcam, and audio tracks on a shared timeline using their recorded timestamps
+- `AVMutableVideoComposition` applies the layout transforms, corner-radius masks, camera shape, backgrounds, and device frame
+- audio tracks are mixed with `AVMutableAudioMix`
+- the result is written to an H.264 MP4 through `AVAssetExportSession` or `AVAssetWriter` at the selected canvas size
+
+The final render must closely match the editor preview because both are driven by the same layout values. For the MVP, export remains local with no cloud rendering.
 
 ---
 
 ## 13. Preview strategy
 
-The live preview and the recorded files should be treated separately.
+The live preview and the recorded files are separate concerns.
 
 During recording:
 
 - Phone frames are written to the phone recording
 - Webcam frames are written to the webcam recording
 - Microphone samples are written to the audio recording
-- A lower-cost combined preview is shown in the interface
+- The native preview layer shows the combined live view in the interface
 
-The preview does not need to be the final encoded output.
-
-Raw full-resolution frames should not be repeatedly sent through the normal Tauri JavaScript command bridge.
-
-A native preview surface, efficient shared buffer, or local media stream should be used instead.
+The preview is the native `AVCaptureVideoPreviewLayer` described in section 12.4. It is not the final encoded output, and it is not produced in the WebView. Raw frames are never sent through the Tauri JavaScript command bridge, and `getUserMedia` / WebView `<video>` are not used anywhere in the product. This is deliberate: the iPhone screen is a CoreMediaIO device that WebKit does not reliably expose, and pushing frames through the bridge is too slow. The interface positions the native layer by sending only the canvas rectangle and layout values.
 
 ---
 

@@ -2,13 +2,14 @@
 
 ## Tauri Command Calls
 
-React calls native operations through small typed functions. Keep command payloads metadata-sized. Media bytes and frame streams belong in native surfaces or files.
+React calls native operations through small typed functions. Keep command payloads metadata-sized. Media bytes and frame streams belong in native surfaces or files, never on the JavaScript bridge and never in the WebView (`getUserMedia` and `<video>` are not used in the product path).
 
 ```ts
 import { invoke } from "@tauri-apps/api/core";
 
 type CaptureSource = {
   id: string;
+  uniqueId: string;
   label: string;
   kind: "phone" | "webcam" | "microphone";
   state: "available" | "unavailable" | "permission-required";
@@ -18,6 +19,8 @@ export function listCaptureSources() {
   return invoke<CaptureSource[]>("list_capture_sources");
 }
 ```
+
+The native side discovers devices with `AVCaptureDeviceDiscoverySession` after enabling CoreMediaIO screen-capture devices, and returns this metadata list. Live preview is positioned by sending the canvas rectangle to native, not by streaming frames back.
 
 ## Project Schema
 

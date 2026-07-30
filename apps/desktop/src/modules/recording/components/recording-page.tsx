@@ -40,6 +40,10 @@ export function RecordingPage() {
   const [stopping, setStopping] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const availableSources = sources.filter((source) => source.state === "available");
+  const phoneSource = availableSources.find((source) => source.kind === "phone");
+  const webcamSource = availableSources.find((source) => source.kind === "webcam");
+  const phoneAspect =
+    phoneSource?.width && phoneSource.height ? phoneSource.width / phoneSource.height : undefined;
 
   useEffect(() => {
     const timer = window.setInterval(() => setSeconds((current) => current + 1), 1000);
@@ -115,7 +119,13 @@ export function RecordingPage() {
       </header>
 
       <div className="flex min-h-0 flex-1 items-center justify-center p-[30px]" ref={ref}>
-        <CanvasStage className="shadow-[var(--shadow-stage)]" size={size} />
+        <CanvasStage
+          className="shadow-[var(--shadow-stage)]"
+          phoneAspect={phoneAspect}
+          phoneUniqueId={phoneSource?.uniqueId}
+          size={size}
+          webcamUniqueId={webcamSource?.uniqueId}
+        />
       </div>
 
       <footer className="border-titlebar-line flex h-[92px] items-center gap-5 border-t px-6">
