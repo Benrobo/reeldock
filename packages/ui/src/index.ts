@@ -16,6 +16,7 @@ export { Segmented, Tabs, type SegmentedSize } from "./components/segmented";
 export { Switch, SwitchRow } from "./components/switch";
 export { Meter, ProgressBar, Slider, type FillTone } from "./components/slider";
 export { Stepper } from "./components/stepper";
+export { PopupSelect, type PopupSelectOption } from "./components/popup-select";
 export {
   Badge,
   HelpBadge,

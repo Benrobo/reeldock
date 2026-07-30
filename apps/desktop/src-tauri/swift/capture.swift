@@ -42,34 +42,52 @@ private func phoneDevice() -> AVCaptureDevice? {
   return external.devices.first(where: isPhone)
 }
 
-private func webcamDevice(excluding phone: AVCaptureDevice?) -> AVCaptureDevice? {
+private func cameraDeviceTypes() -> [AVCaptureDevice.DeviceType] {
+  var types: [AVCaptureDevice.DeviceType] = [.builtInWideAngleCamera, .external]
+  if #unavailable(macOS 14.0) {
+    types.append(.externalUnknown)
+  }
+  return types
+}
+
+private func webcamDevices(excluding phone: AVCaptureDevice?) -> [AVCaptureDevice] {
   let cameras = AVCaptureDevice.DiscoverySession(
-    deviceTypes: [.builtInWideAngleCamera, .external],
+    deviceTypes: cameraDeviceTypes(),
     mediaType: .video,
     position: .unspecified
   )
-  return cameras.devices.first { device in
+  return cameras.devices.filter { device in
     device.uniqueID != phone?.uniqueID && !isPhone(device)
   }
 }
 
 private func videoSources() -> [[String: Any]] {
   let phone = phoneDevice()
-  let webcam = webcamDevice(excluding: phone)
+  let webcams = webcamDevices(excluding: phone)
 
   var sources: [[String: Any]] = []
   if let phone {
     sources.append(source("phone", phone))
   }
-  if let webcam {
+  for webcam in webcams {
     sources.append(source("webcam", webcam))
   }
   return sources
 }
 
-private func microphoneSource() -> [String: Any]? {
-  guard let mic = AVCaptureDevice.default(for: .audio) else { return nil }
-  return source("microphone", mic)
+private func microphoneSources() -> [[String: Any]] {
+  let microphones = AVCaptureDevice.DiscoverySession(
+    deviceTypes: [.microphone],
+    mediaType: .audio,
+    position: .unspecified
+  )
+
+  let devices =
+    microphones.devices.isEmpty
+    ? AVCaptureDevice.default(for: .audio).map { [$0] } ?? []
+    : microphones.devices
+
+  return devices.map { source("microphone", $0) }
 }
 
 private func source(_ kind: String, _ device: AVCaptureDevice) -> [String: Any] {
@@ -80,6 +98,9 @@ private func source(_ kind: String, _ device: AVCaptureDevice) -> [String: Any] 
     "kind": kind,
     "state": "available",
   ]
+  if device.hasMediaType(.audio) || device.hasMediaType(.muxed) {
+    result["hasAudio"] = true
+  }
   if device.hasMediaType(.video) || device.hasMediaType(.muxed) {
     let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
     if dimensions.width > 0 && dimensions.height > 0 {
@@ -95,9 +116,7 @@ public func reeldock_copy_capture_sources_json() -> UnsafeMutablePointer<CChar>?
   enableScreenCaptureDevices()
 
   var sources = videoSources()
-  if let mic = microphoneSource() {
-    sources.append(mic)
-  }
+  sources.append(contentsOf: microphoneSources())
 
   guard let data = try? JSONSerialization.data(withJSONObject: sources),
     let json = String(data: data, encoding: .utf8)
@@ -117,7 +136,7 @@ public func reeldock_copy_all_devices_json() -> UnsafeMutablePointer<CChar>? {
   enableScreenCaptureDevices()
 
   let discovery = AVCaptureDevice.DiscoverySession(
-    deviceTypes: [.builtInWideAngleCamera, .external, .microphone],
+    deviceTypes: cameraDeviceTypes() + [.microphone],
     mediaType: nil,
     position: .unspecified
   )

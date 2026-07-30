@@ -10,6 +10,8 @@ pub struct CaptureSource {
     pub label: String,
     pub kind: String,
     pub state: String,
+    #[serde(rename = "hasAudio", skip_serializing_if = "Option::is_none")]
+    pub has_audio: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.446.0/dist/umd/lucide.js"></script>
+<style>
+  html,body{margin:0;padding:0;background:#0e0d0c;-webkit-font-smoothing:antialiased;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,sans-serif;color:#f2efea;}
+  button{font-family:inherit;-webkit-tap-highlight-color:transparent;transition:transform .26s cubic-bezier(.34,1.56,.64,1),background .18s ease,border-color .18s ease,color .18s ease;}
+  button:active{transform:translateY(1.5px);transition-duration:.09s;transition-timing-function:ease-out;}
+  a{color:oklch(0.68 0.15 252);text-decoration:none;}
+  a:hover{color:oklch(0.76 0.13 252);}
+  svg.lucide{display:block;stroke-width:1.75;}
+</style>
+</helmet>
+
+<section style="padding:40px 40px 72px;">
+  <div style="max-width:1520px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 8px;border-radius:6px;background:#24221f;border:1px solid #33302b;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;font-weight:600;color:#a6a19a;">1</span>
+      <span style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8d8880;">Setup &middot; sources panel</span>
+    </div>
+    <h1 style="font-size:30px;font-weight:600;letter-spacing:-.024em;margin:14px 0 0;">Choosing between two cameras and three microphones</h1>
+    <p style="font-size:14.5px;line-height:1.6;color:#a6a19a;max-width:780px;margin:12px 0 0;text-wrap:pretty;">The panel today asks one question with two controls. Every device carries its own switch, which promises you can record both cameras at once &mdash; you can't, one camera and one microphone go into a recording &mdash; and the <em>Selected</em> pill answers the same question a second time. The list also grows with every device you own.</p>
+    <p style="font-size:14.5px;line-height:1.6;color:#c7c2ba;max-width:780px;margin:10px 0 0;text-wrap:pretty;">All three below share one model: <strong style="font-weight:600;">role first, device second.</strong> Four fixed roles &mdash; phone, camera, microphone, phone sound &mdash; each with a single switch meaning "include this in the recording", and the device as a choice inside the role. Picking a device releases the previous one, because that is what actually happens.</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:26px;margin-top:34px;align-items:flex-start;">
+
+      <div id="1a" style="width:430px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:6px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;font-weight:600;">1a</span>
+          <span style="font-size:15px;font-weight:600;letter-spacing:-.015em;">Role cards, list unfolds in place</span>
+        </div>
+        <p style="font-size:13px;line-height:1.55;color:#a6a19a;margin:9px 0 0;text-wrap:pretty;">Four cards, always four. Press the device name and the alternatives unfold inside the card, so the choice never covers anything else. Picking one visibly releases the other.</p>
+
+        <div style="margin-top:16px;border-radius:14px;background:#1c1a18;border:1px solid #2a2724;padding:18px 16px;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;">Sources</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:12px;">
+
+            <div style="border-radius:12px;background:#24221f;border:1px solid #33302b;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);padding:12px 13px;">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);flex-shrink:0;color:oklch(0.72 0.13 252);"><i data-lucide="smartphone" style="width:16px;height:16px;"></i></span>
+                <span style="flex:1;">
+                  <span style="display:block;font-size:13.5px;font-weight:600;letter-spacing:-.01em;">Phone</span>
+                  <span style="display:block;font-size:11.5px;color:#9a948c;margin-top:2px;">Benaiah &middot; iPhone 15 Pro over USB</span>
+                </span>
+                <span style="display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:100px;background:#1b1917;border:1px solid #302d29;flex-shrink:0;">
+                  <span style="display:block;width:6px;height:6px;border-radius:50%;background:oklch(0.68 0.14 155);"></span>
+                  <span style="font-size:11px;font-weight:600;color:#a6a19a;">Ready</span>
+                </span>
+              </div>
+            </div>
+
+            <div style="{{ a.camCard }}">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <span style="{{ a.camIcon }}"><i data-lucide="video" style="width:16px;height:16px;"></i></span>
+                <span style="flex:1;">
+                  <span style="display:block;font-size:13.5px;font-weight:600;letter-spacing:-.01em;">Camera</span>
+                  <span style="display:block;font-size:11.5px;color:#9a948c;margin-top:2px;">{{ a.camSub }}</span>
+                </span>
+                <button onClick="{{ a.toggleCam }}" style="{{ a.camTrack }}"><span style="{{ a.camKnob }}"></span></button>
+              </div>
+              <sc-if value="{{ a.camOn }}">
+                <div style="margin-top:11px;">
+                  <button onClick="{{ a.openCam }}" style="{{ a.camValue }}">
+                    <span style="flex:1;text-align:left;font-size:12.5px;font-weight:600;color:#f2efea;">{{ a.camName }}</span>
+                    <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;">{{ a.camMeta }}</span>
+                    <span style="{{ a.camChev }}"><i data-lucide="chevron-down" style="width:13px;height:13px;"></i></span>
+                  </button>
+                  <sc-if value="{{ a.camOpen }}">
+                    <div style="display:flex;flex-direction:column;gap:2px;margin-top:6px;padding:5px;border-radius:10px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);">
+                      <sc-for list="{{ a.cams }}" as="d" hint-placeholder-count="3">
+                        <button onClick="{{ d.pick }}" style="{{ d.row }}">
+                          <span style="{{ d.tick }}"><i data-lucide="check" style="width:13px;height:13px;"></i></span>
+                          <span style="flex:1;text-align:left;">
+                            <span style="display:block;font-size:12.5px;font-weight:500;">{{ d.name }}</span>
+                            <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;margin-top:2px;">{{ d.meta }}</span>
+                          </span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="{{ a.micCard }}">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <span style="{{ a.micIcon }}"><i data-lucide="mic" style="width:16px;height:16px;"></i></span>
+                <span style="flex:1;">
+                  <span style="display:block;font-size:13.5px;font-weight:600;letter-spacing:-.01em;">Microphone</span>
+                  <span style="display:block;font-size:11.5px;color:#9a948c;margin-top:2px;">{{ a.micSub }}</span>
+                </span>
+                <button onClick="{{ a.toggleMic }}" style="{{ a.micTrack }}"><span style="{{ a.micKnob }}"></span></button>
+              </div>
+              <sc-if value="{{ a.micOn }}">
+                <div style="margin-top:11px;">
+                  <button onClick="{{ a.openMic }}" style="{{ a.micValue }}">
+                    <span style="flex:1;text-align:left;font-size:12.5px;font-weight:600;color:#f2efea;">{{ a.micName }}</span>
+                    <span style="display:block;width:54px;height:5px;border-radius:3px;background:#141312;border:1px solid #2a2724;overflow:hidden;flex-shrink:0;"><span style="{{ a.micBar }}"></span></span>
+                    <span style="{{ a.micChev }}"><i data-lucide="chevron-down" style="width:13px;height:13px;"></i></span>
+                  </button>
+                  <sc-if value="{{ a.micOpen }}">
+                    <div style="display:flex;flex-direction:column;gap:2px;margin-top:6px;padding:5px;border-radius:10px;background:#1b1917;border:1px solid #302d29;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);">
+                      <sc-for list="{{ a.mics }}" as="d" hint-placeholder-count="3">
+                        <button onClick="{{ d.pick }}" style="{{ d.row }}">
+                          <span style="{{ d.tick }}"><i data-lucide="check" style="width:13px;height:13px;"></i></span>
+                          <span style="flex:1;text-align:left;">
+                            <span style="display:block;font-size:12.5px;font-weight:500;">{{ d.name }}</span>
+                            <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;margin-top:2px;">{{ d.meta }}</span>
+                          </span>
+                          <span style="display:block;width:40px;height:5px;border-radius:3px;background:#141312;border:1px solid #2a2724;overflow:hidden;flex-shrink:0;"><span style="{{ d.bar }}"></span></span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="border-radius:12px;background:#211f1c;border:1px solid #2e2b27;padding:12px 13px;">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#1b1917;border:1px solid #2a2724;flex-shrink:0;color:#6f6a63;"><i data-lucide="volume-2" style="width:16px;height:16px;"></i></span>
+                <span style="flex:1;">
+                  <span style="display:block;font-size:13.5px;font-weight:600;letter-spacing:-.01em;color:#8d8880;">Phone sound</span>
+                  <span style="display:block;font-size:11.5px;color:#6f6a63;margin-top:2px;">This cable doesn't carry audio</span>
+                </span>
+                <span style="position:relative;width:44px;height:26px;border-radius:13px;background:#221f1d;border:1px solid #2a2724;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);flex-shrink:0;">
+                  <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#3a3630;display:block;"></span>
+                </span>
+              </div>
+            </div>
+
+          </div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2724;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#8d8880;">{{ a.summary }}</div>
+        </div>
+
+        <div style="margin-top:14px;padding:14px 16px;border-radius:12px;background:#1c1a18;border:1px solid #2a2724;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#8d8880;">Holds up when</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px;">
+            <sc-for list="{{ notesA }}" as="n" hint-placeholder-count="3">
+              <div style="display:flex;gap:9px;align-items:baseline;">
+                <span style="display:block;width:7px;height:1.5px;background:#5f5b55;flex-shrink:0;position:relative;top:-4px;"></span>
+                <span style="flex:1;font-size:12.5px;line-height:1.5;color:#a6a19a;">{{ n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div id="1b" style="width:430px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:6px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;font-weight:600;">1b</span>
+          <span style="font-size:15px;font-weight:600;letter-spacing:-.015em;">One row per role, proper popup menu</span>
+        </div>
+        <p style="font-size:13px;line-height:1.55;color:#a6a19a;margin:9px 0 0;text-wrap:pretty;">The tightest and the most Mac-native: a popup button per role, menu overlaying on press. Four rows at a fixed height whether you own two microphones or nine, leaving the rail room for the checklist.</p>
+
+        <div style="margin-top:16px;border-radius:14px;background:#1c1a18;border:1px solid #2a2724;padding:18px 16px;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;">Sources</div>
+          <div style="margin-top:12px;border-radius:12px;background:#24221f;border:1px solid #33302b;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #2e2b27;">
+              <span style="width:84px;flex-shrink:0;display:flex;align-items:center;gap:8px;color:oklch(0.72 0.13 252);">
+                <i data-lucide="smartphone" style="width:14px;height:14px;"></i>
+                <span style="font-size:12.5px;font-weight:600;color:#f2efea;">Phone</span>
+              </span>
+              <span style="flex:1;display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:8px;background:#1b1917;border:1px solid #2e2b27;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);">
+                <span style="display:block;width:6px;height:6px;border-radius:50%;background:oklch(0.68 0.14 155);flex-shrink:0;"></span>
+                <span style="flex:1;font-size:12.5px;font-weight:600;">Benaiah</span>
+                <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;">USB</span>
+              </span>
+              <span style="width:44px;flex-shrink:0;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#6f6a63;text-align:center;">always</span>
+            </div>
+
+            <div style="position:relative;display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #2e2b27;z-index:3;">
+              <span style="width:84px;flex-shrink:0;display:flex;align-items:center;gap:8px;{{ b.camTint }}">
+                <i data-lucide="video" style="width:14px;height:14px;"></i>
+                <span style="{{ b.camLabel }}">Camera</span>
+              </span>
+              <button onClick="{{ b.openCam }}" style="{{ b.camPopup }}">
+                <span style="flex:1;text-align:left;font-size:12.5px;font-weight:600;">{{ b.camName }}</span>
+                <span style="{{ b.camChev }}"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;"></i></span>
+              </button>
+              <button onClick="{{ b.toggleCam }}" style="{{ b.camTrack }}"><span style="{{ b.camKnob }}"></span></button>
+              <sc-if value="{{ b.camOpen }}">
+                <div style="position:absolute;left:94px;right:60px;top:42px;padding:5px;border-radius:11px;background:#2e2b27;border:1px solid #46413a;box-shadow:0 16px 38px -12px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.05);z-index:9;">
+                  <sc-for list="{{ b.cams }}" as="d" hint-placeholder-count="3">
+                    <button onClick="{{ d.pick }}" style="{{ d.row }}">
+                      <span style="{{ d.tick }}"><i data-lucide="check" style="width:13px;height:13px;"></i></span>
+                      <span style="flex:1;text-align:left;">
+                        <span style="display:block;font-size:12.5px;font-weight:500;">{{ d.name }}</span>
+                        <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#9a948c;margin-top:2px;">{{ d.meta }}</span>
+                      </span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="position:relative;display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #2e2b27;z-index:2;">
+              <span style="width:84px;flex-shrink:0;display:flex;align-items:center;gap:8px;{{ b.micTint }}">
+                <i data-lucide="mic" style="width:14px;height:14px;"></i>
+                <span style="{{ b.micLabel }}">Mic</span>
+              </span>
+              <button onClick="{{ b.openMic }}" style="{{ b.micPopup }}">
+                <span style="flex:1;text-align:left;font-size:12.5px;font-weight:600;">{{ b.micName }}</span>
+                <span style="{{ b.micChev }}"><i data-lucide="chevrons-up-down" style="width:12px;height:12px;"></i></span>
+              </button>
+              <button onClick="{{ b.toggleMic }}" style="{{ b.micTrack }}"><span style="{{ b.micKnob }}"></span></button>
+              <sc-if value="{{ b.micOpen }}">
+                <div style="position:absolute;left:94px;right:60px;top:42px;padding:5px;border-radius:11px;background:#2e2b27;border:1px solid #46413a;box-shadow:0 16px 38px -12px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.05);z-index:9;">
+                  <sc-for list="{{ b.mics }}" as="d" hint-placeholder-count="3">
+                    <button onClick="{{ d.pick }}" style="{{ d.row }}">
+                      <span style="{{ d.tick }}"><i data-lucide="check" style="width:13px;height:13px;"></i></span>
+                      <span style="flex:1;text-align:left;">
+                        <span style="display:block;font-size:12.5px;font-weight:500;">{{ d.name }}</span>
+                        <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#9a948c;margin-top:2px;">{{ d.meta }}</span>
+                      </span>
+                      <span style="display:block;width:36px;height:5px;border-radius:3px;background:#1b1917;border:1px solid #38342e;overflow:hidden;flex-shrink:0;"><span style="{{ d.bar }}"></span></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;">
+              <span style="width:84px;flex-shrink:0;display:flex;align-items:center;gap:8px;color:#5f5b55;">
+                <i data-lucide="volume-2" style="width:14px;height:14px;"></i>
+                <span style="font-size:12.5px;font-weight:600;color:#8d8880;">Sound</span>
+              </span>
+              <span style="flex:1;display:flex;align-items:center;padding:8px 11px;border-radius:8px;background:#1e1c1a;border:1px solid #2a2724;">
+                <span style="flex:1;font-size:12.5px;color:#6f6a63;">No audio on this cable</span>
+              </span>
+              <span style="position:relative;width:44px;height:26px;border-radius:13px;background:#221f1d;border:1px solid #2a2724;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);flex-shrink:0;">
+                <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#3a3630;display:block;"></span>
+              </span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 13px;border-radius:11px;background:#211f1c;border:1px solid #2e2b27;">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#8d8880;flex-shrink:0;">Input</span>
+            <span style="flex:1;height:6px;border-radius:3px;background:#141312;border:1px solid #2a2724;overflow:hidden;"><span style="{{ b.inputBar }}"></span></span>
+            <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;flex-shrink:0;">{{ b.inputLabel }}</span>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid #2a2724;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#8d8880;">{{ b.summary }}</div>
+        </div>
+
+        <div style="margin-top:14px;padding:14px 16px;border-radius:12px;background:#1c1a18;border:1px solid #2a2724;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#8d8880;">Holds up when</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px;">
+            <sc-for list="{{ notesB }}" as="n" hint-placeholder-count="3">
+              <div style="display:flex;gap:9px;align-items:baseline;">
+                <span style="display:block;width:7px;height:1.5px;background:#5f5b55;flex-shrink:0;position:relative;top:-4px;"></span>
+                <span style="flex:1;font-size:12.5px;line-height:1.5;color:#a6a19a;">{{ n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div id="1c" style="width:470px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:6px;background:linear-gradient(180deg,#3b3733,#2e2b27);border:1px solid #47423b;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;font-weight:600;">1c</span>
+          <span style="font-size:15px;font-weight:600;letter-spacing:-.015em;">Slots on top, device shelf below</span>
+        </div>
+        <p style="font-size:13px;line-height:1.55;color:#a6a19a;margin:9px 0 0;text-wrap:pretty;">Four slots stay put; pressing one loads its devices into the shelf underneath, where you judge a camera by its picture and a mic by its level rather than by its name. Costs height, wins when you own real gear.</p>
+
+        <div style="margin-top:16px;border-radius:14px;background:#1c1a18;border:1px solid #2a2724;padding:18px 16px;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#9a948c;">Sources</div>
+
+          <div style="display:flex;gap:7px;margin-top:12px;">
+            <sc-for list="{{ c.slots }}" as="s" hint-placeholder-count="4">
+              <button onClick="{{ s.go }}" style="{{ s.style }}">
+                <span style="display:flex;align-items:center;gap:6px;{{ s.tint }}">
+                  <i data-lucide="{{ s.icon }}" style="width:13px;height:13px;"></i>
+                  <span style="font-size:11.5px;font-weight:600;letter-spacing:-.005em;color:{{ s.labelColor }};">{{ s.role }}</span>
+                </span>
+                <span style="display:block;font-size:11px;color:#8d8880;margin-top:5px;text-align:left;line-height:1.35;">{{ s.value }}</span>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;min-height:26px;">
+            <span style="font-size:12.5px;font-weight:600;">{{ c.shelfTitle }}</span>
+            <sc-if value="{{ c.showToggle }}">
+              <span style="display:flex;align-items:center;gap:9px;">
+                <span style="font-size:11.5px;color:#9a948c;">{{ c.toggleLabel }}</span>
+                <button onClick="{{ c.toggle }}" style="{{ c.track }}"><span style="{{ c.knob }}"></span></button>
+              </span>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ c.isCam }}">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:11px;">
+              <sc-for list="{{ c.camTiles }}" as="d" hint-placeholder-count="3">
+                <button onClick="{{ d.pick }}" style="{{ d.tile }}">
+                  <span style="display:block;width:100%;aspect-ratio:16/9;border-radius:7px;background:repeating-linear-gradient(135deg,#302d29 0 6px,#2a2724 6px 12px);border:1px solid #383430;position:relative;overflow:hidden;">
+                    <span style="position:absolute;left:7px;bottom:6px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#7a756d;">{{ d.res }}</span>
+                    <span style="{{ d.badge }}"><i data-lucide="check" style="width:11px;height:11px;"></i></span>
+                  </span>
+                  <span style="display:block;font-size:12.5px;font-weight:600;margin-top:9px;text-align:left;">{{ d.name }}</span>
+                  <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;margin-top:3px;text-align:left;">{{ d.meta }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.isMic }}">
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:11px;">
+              <sc-for list="{{ c.micTiles }}" as="d" hint-placeholder-count="3">
+                <button onClick="{{ d.pick }}" style="{{ d.tile }}">
+                  <span style="{{ d.tick }}"><i data-lucide="check" style="width:13px;height:13px;"></i></span>
+                  <span style="flex:1;text-align:left;">
+                    <span style="display:block;font-size:12.5px;font-weight:600;">{{ d.name }}</span>
+                    <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;margin-top:3px;">{{ d.meta }}</span>
+                  </span>
+                  <span style="display:block;width:78px;height:6px;border-radius:3px;background:#141312;border:1px solid #2e2b27;overflow:hidden;flex-shrink:0;"><span style="{{ d.bar }}"></span></span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.isPhone }}">
+            <div style="display:flex;align-items:center;gap:13px;margin-top:11px;padding:14px;border-radius:11px;background:#24221f;border:1px solid #33302b;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);">
+              <span style="display:block;width:34px;height:54px;border-radius:6px;border:1.5px solid #47423b;background:repeating-linear-gradient(135deg,#302d29 0 6px,#2a2724 6px 12px);flex-shrink:0;"></span>
+              <span style="flex:1;">
+                <span style="display:block;font-size:13px;font-weight:600;">Benaiah</span>
+                <span style="display:block;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#8d8880;margin-top:4px;">iPhone 15 Pro &middot; USB &middot; 1170&times;2532</span>
+                <span style="display:block;font-size:11.5px;line-height:1.5;color:#9a948c;margin-top:6px;">The only phone plugged in, so there is nothing to choose. Unplug it and this slot goes amber.</span>
+              </span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ c.isSound }}">
+            <div style="margin-top:11px;padding:14px;border-radius:11px;background:#211f1c;border:1px solid #2e2b27;">
+              <span style="display:block;font-size:12.5px;font-weight:600;color:#c7c2ba;">Nothing to assign yet</span>
+              <span style="display:block;font-size:11.5px;line-height:1.5;color:#8d8880;margin-top:6px;">The audio coming out of the phone can't be read over this connection. Your microphone still records everything you say.</span>
+            </div>
+          </sc-if>
+
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2724;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#8d8880;">{{ c.summary }}</div>
+        </div>
+
+        <div style="margin-top:14px;padding:14px 16px;border-radius:12px;background:#1c1a18;border:1px solid #2a2724;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#8d8880;">Holds up when</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px;">
+            <sc-for list="{{ notesC }}" as="n" hint-placeholder-count="3">
+              <div style="display:flex;gap:9px;align-items:baseline;">
+                <span style="display:block;width:7px;height:1.5px;background:#5f5b55;flex-shrink:0;position:relative;top:-4px;"></span>
+                <span style="flex:1;font-size:12.5px;line-height:1.5;color:#a6a19a;">{{ n }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:34px;padding:20px 22px;border-radius:14px;background:#1c1a18;border:1px solid #2a2724;max-width:900px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#8d8880;">New primitive, used by all three</div>
+      <div style="font-size:15px;font-weight:600;letter-spacing:-.015em;margin-top:9px;">Device picker</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#a6a19a;margin:8px 0 0;text-wrap:pretty;">A recessed value row that reads as one answer, a chevron that says there are others, and a raised menu of rows with a checkmark column. It is the kit's popup&#8209;button recipe extended with a second line of device detail and, for microphones, a live level in the row &mdash; so you can pick the mic that is actually hearing you. Same primitive fills the phone slot, the camera slot, and later the export destination.</p>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:16px;">
+        <sc-for list="{{ recipe }}" as="r" hint-placeholder-count="4">
+          <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#8d8880;line-height:1.7;">{{ r }}</span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    aCam:1, aMic:0, aCamOn:true, aMicOn:true, aOpen:null,
+    bCam:1, bMic:0, bCamOn:true, bMicOn:true, bOpen:null,
+    cSlot:'camera', cCam:1, cMic:0, cCamOn:true, cMicOn:true
+  };
+
+  CAMS = [
+    {name:'Camo Camera', meta:'Virtual · iPhone as webcam', res:'1080p 30'},
+    {name:'MacBook Pro Camera', meta:'Built in · 1920×1080', res:'1080p 60'},
+    {name:'Opal C1', meta:'USB-C · shows as external', res:'4K 24'}
+  ];
+  MICS = [
+    {name:'Shure MV7', meta:'USB · 48 kHz', lvl:64},
+    {name:'MacBook Pro Microphone', meta:'Built in · 3 element array', lvl:38},
+    {name:'Camo Microphone', meta:'Virtual · follows the phone', lvl:12}
+  ];
+
+  componentDidMount(){ this.icons(); }
+  componentDidUpdate(){ this.icons(); }
+  icons(){
+    const go = () => { try{ window.lucide && window.lucide.createIcons(); }catch(e){} };
+    go(); setTimeout(go, 60); setTimeout(go, 400);
+  }
+
+  set = o => this.setState(o);
+
+  sw(on){
+    return {
+      track:{position:'relative',width:'44px',height:'26px',borderRadius:'13px',padding:0,cursor:'pointer',flexShrink:0,
+        border:'1px solid rgba(0,0,0,.4)',boxShadow:'inset 0 1px 3px rgba(0,0,0,.45)',transition:'background .24s cubic-bezier(.32,.72,0,1)',
+        background:on?'linear-gradient(180deg,oklch(0.66 0.15 252),oklch(0.56 0.16 252))':'#2b2825'},
+      knob:{position:'absolute',top:'2px',left:'2px',width:'20px',height:'20px',borderRadius:'50%',display:'block',
+        background:'linear-gradient(180deg,#ffffff,#e9e6e0)',boxShadow:'0 1px 3px rgba(0,0,0,.5),0 0 0 .5px rgba(0,0,0,.18)',
+        transition:'transform .24s cubic-bezier(.32,.72,0,1)',transform:on?'translateX(18px)':'translateX(0)'}
+    };
+  }
+
+  roleIcon(on, hue){
+    return {display:'flex',alignItems:'center',justifyContent:'center',width:'30px',height:'30px',borderRadius:'8px',flexShrink:0,
+      background:'#1b1917',border:'1px solid '+(on?'#302d29':'#2a2724'),boxShadow:'inset 0 1px 3px rgba(0,0,0,.45)',
+      color:on?'oklch(0.74 0.13 '+hue+')':'#5f5b55'};
+  }
+
+  card(on){
+    return {borderRadius:'12px',padding:'12px 13px',transition:'background .2s ease,border-color .2s ease',
+      background:on?'#24221f':'#211f1c',border:'1px solid '+(on?'#33302b':'#2e2b27'),
+      boxShadow:on?'inset 0 1px 0 rgba(255,255,255,.03)':'none'};
+  }
+
+  valueRow(open){
+    return {display:'flex',alignItems:'center',gap:'9px',width:'100%',padding:'8px 10px',borderRadius:'9px',cursor:'pointer',
+      background:'#1b1917',border:'1px solid '+(open?'#4a453e':'#302d29'),boxShadow:'inset 0 1px 3px rgba(0,0,0,.45)'};
+  }
+  chev(open){
+    return {display:'flex',alignItems:'center',justifyContent:'center',width:'18px',height:'18px',borderRadius:'5px',flexShrink:0,
+      color:'#9a948c',transition:'transform .22s cubic-bezier(.32,.72,0,1)',transform:open?'rotate(180deg)':'none'};
+  }
+  menuRow(sel, dark){
+    return {display:'flex',alignItems:'center',gap:'9px',width:'100%',padding:'8px 9px',borderRadius:'7px',cursor:'pointer',
+      border:'1px solid '+(sel?(dark?'#5a544c':'#3f3a34'):'transparent'),
+      background:sel?(dark?'#3a3630':'#2a2724'):'transparent',transition:'background .16s ease'};
+  }
+  tick(sel){
+    return {display:'flex',alignItems:'center',justifyContent:'center',width:'16px',height:'16px',flexShrink:0,
+      color:sel?'oklch(0.72 0.15 252)':'transparent'};
+  }
+  meter(v, hue){
+    return {display:'block',height:'100%',borderRadius:'3px',width:v+'%',
+      background:'linear-gradient(90deg,oklch(0.72 0.13 '+hue+'),oklch(0.62 0.15 '+hue+'))'};
+  }
+
+  renderVals(){
+    const s = this.state, CAMS = this.CAMS, MICS = this.MICS;
+
+    const aSw = k => this.sw(k);
+    const A = (() => {
+      const cam = CAMS[s.aCam], mic = MICS[s.aMic], cs = aSw(s.aCamOn), ms = aSw(s.aMicOn);
+      const camOpen = s.aOpen==='cam', micOpen = s.aOpen==='mic';
+      return {
+        camCard:this.card(s.aCamOn), micCard:this.card(s.aMicOn),
+        camIcon:this.roleIcon(s.aCamOn,75), micIcon:this.roleIcon(s.aMicOn,300),
+        camOn:s.aCamOn, micOn:s.aMicOn,
+        camSub:s.aCamOn?'Recorded to webcam.mov':'Left out of this recording',
+        micSub:s.aMicOn?'Recorded to microphone.m4a':'Left out of this recording',
+        camTrack:cs.track, camKnob:cs.knob, micTrack:ms.track, micKnob:ms.knob,
+        toggleCam:()=>this.set({aCamOn:!s.aCamOn, aOpen:null}),
+        toggleMic:()=>this.set({aMicOn:!s.aMicOn, aOpen:null}),
+        openCam:()=>this.set({aOpen:camOpen?null:'cam'}),
+        openMic:()=>this.set({aOpen:micOpen?null:'mic'}),
+        camOpen, micOpen,
+        camName:cam.name, camMeta:cam.res, micName:mic.name,
+        camValue:this.valueRow(camOpen), micValue:this.valueRow(micOpen),
+        camChev:this.chev(camOpen), micChev:this.chev(micOpen),
+        micBar:this.meter(mic.lvl,155),
+        cams:CAMS.map((d,i)=>({...d, row:this.menuRow(i===s.aCam,false), tick:this.tick(i===s.aCam), pick:()=>this.set({aCam:i, aOpen:null})})),
+        mics:MICS.map((d,i)=>({...d, row:this.menuRow(i===s.aMic,false), tick:this.tick(i===s.aMic),
+          bar:this.meter(d.lvl,155), pick:()=>this.set({aMic:i, aOpen:null})})),
+        summary:(1 + (s.aCamOn?1:0) + (s.aMicOn?1:0)) + ' sources → ~/Movies/ReelDock'
+      };
+    })();
+
+    const B = (() => {
+      const cam = CAMS[s.bCam], mic = MICS[s.bMic], cs = this.sw(s.bCamOn), ms = this.sw(s.bMicOn);
+      const camOpen = s.bOpen==='cam', micOpen = s.bOpen==='mic';
+      const popup = (on, open) => ({display:'flex',alignItems:'center',gap:'8px',flex:1,padding:'8px 10px',borderRadius:'8px',cursor:on?'pointer':'default',
+        background: on ? 'linear-gradient(180deg,#3b3733,#2e2b27)' : '#1e1c1a',
+        border:'1px solid '+(open?'#5a544c':(on?'#47423b':'#2a2724')),
+        boxShadow: on ? 'inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35)' : 'none',
+        color: on ? '#f2efea' : '#6f6a63'});
+      const label = on => ({fontSize:'12.5px',fontWeight:600,color:on?'#f2efea':'#8d8880'});
+      const tint = on => 'color:'+(on?'oklch(0.74 0.13 75)':'#5f5b55')+';';
+      return {
+        camName:s.bCamOn?cam.name:'Not recording', micName:s.bMicOn?mic.name:'Not recording',
+        camPopup:popup(s.bCamOn,camOpen), micPopup:popup(s.bMicOn,micOpen),
+        camChev:this.chev(false), micChev:this.chev(false),
+        camLabel:label(s.bCamOn), micLabel:label(s.bMicOn),
+        camTint:tint(s.bCamOn), micTint:'color:'+(s.bMicOn?'oklch(0.70 0.13 300)':'#5f5b55')+';',
+        camTrack:cs.track, camKnob:cs.knob, micTrack:ms.track, micKnob:ms.knob,
+        toggleCam:()=>this.set({bCamOn:!s.bCamOn, bOpen:null}),
+        toggleMic:()=>this.set({bMicOn:!s.bMicOn, bOpen:null}),
+        openCam:()=>{ if(s.bCamOn) this.set({bOpen:camOpen?null:'cam'}); },
+        openMic:()=>{ if(s.bMicOn) this.set({bOpen:micOpen?null:'mic'}); },
+        camOpen, micOpen,
+        cams:CAMS.map((d,i)=>({...d, row:this.menuRow(i===s.bCam,true), tick:this.tick(i===s.bCam), pick:()=>this.set({bCam:i, bOpen:null})})),
+        mics:MICS.map((d,i)=>({...d, row:this.menuRow(i===s.bMic,true), tick:this.tick(i===s.bMic),
+          bar:this.meter(d.lvl,155), pick:()=>this.set({bMic:i, bOpen:null})})),
+        inputBar:this.meter(s.bMicOn?mic.lvl:0,155),
+        inputLabel:s.bMicOn?('−'+(28-Math.round(mic.lvl/5))+' dB'):'muted',
+        summary:(1 + (s.bCamOn?1:0) + (s.bMicOn?1:0)) + ' sources → ~/Movies/ReelDock'
+      };
+    })();
+
+    const C = (() => {
+      const slot = s.cSlot, cam = CAMS[s.cCam], mic = MICS[s.cMic];
+      const defs = [
+        {key:'phone', role:'Phone', icon:'smartphone', hue:252, value:'Benaiah', on:true},
+        {key:'camera', role:'Camera', icon:'video', hue:75, value:s.cCamOn?cam.name.split(' ')[0]:'Off', on:s.cCamOn},
+        {key:'mic', role:'Mic', icon:'mic', hue:300, value:s.cMicOn?mic.name.split(' ')[0]:'Off', on:s.cMicOn},
+        {key:'sound', role:'Sound', icon:'volume-2', hue:75, value:'None', on:false}
+      ];
+      const sel = k => k===slot;
+      const on = slot==='camera' ? s.cCamOn : (slot==='mic' ? s.cMicOn : false);
+      const cs = this.sw(on);
+      return {
+        slots:defs.map(d=>({role:d.role, value:d.value, icon:d.icon, go:()=>this.set({cSlot:d.key}),
+          labelColor: d.on ? '#f2efea' : '#8d8880',
+          tint:'color:'+(d.on?'oklch(0.74 0.13 '+d.hue+')':'#5f5b55')+';',
+          style:{flex:1,padding:'11px 11px 12px',borderRadius:'11px',cursor:'pointer',textAlign:'left',
+            background:sel(d.key)?'linear-gradient(180deg,#3b3733,#2e2b27)':'#211f1c',
+            border:'1px solid '+(sel(d.key)?'#524c44':'#2e2b27'),
+            boxShadow:sel(d.key)?'inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35)':'none'}})),
+        isPhone:slot==='phone', isCam:slot==='camera', isMic:slot==='mic', isSound:slot==='sound',
+        showToggle:slot==='camera'||slot==='mic',
+        toggleLabel:on?'Recording':'Left out',
+        track:cs.track, knob:cs.knob,
+        toggle:()=>this.set(slot==='camera'?{cCamOn:!s.cCamOn}:{cMicOn:!s.cMicOn}),
+        shelfTitle:{phone:'Connected phone',camera:'Cameras on this Mac',mic:'Microphones on this Mac',sound:'Phone sound'}[slot],
+        camTiles:CAMS.map((d,i)=>({...d, pick:()=>this.set({cCam:i, cCamOn:true}),
+          tile:{padding:'9px',borderRadius:'11px',cursor:'pointer',textAlign:'left',
+            background:i===s.cCam?'linear-gradient(180deg,#3b3733,#2e2b27)':'#211f1c',
+            border:'1px solid '+(i===s.cCam?'oklch(0.56 0.14 252)':'#2e2b27'),
+            boxShadow:i===s.cCam?'inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35)':'none'},
+          badge:{position:'absolute',right:'6px',top:'6px',display:i===s.cCam?'flex':'none',
+            alignItems:'center',justifyContent:'center',width:'20px',height:'20px',borderRadius:'50%',
+            background:'linear-gradient(180deg,oklch(0.66 0.15 252),oklch(0.56 0.16 252))',
+            border:'1px solid oklch(0.46 0.14 252)',color:'#fff'}})),
+        micTiles:MICS.map((d,i)=>({...d, pick:()=>this.set({cMic:i, cMicOn:true}),
+          tick:this.tick(i===s.cMic), bar:this.meter(d.lvl,155),
+          tile:{display:'flex',alignItems:'center',gap:'11px',padding:'11px 12px',borderRadius:'11px',cursor:'pointer',
+            background:i===s.cMic?'linear-gradient(180deg,#3b3733,#2e2b27)':'#211f1c',
+            border:'1px solid '+(i===s.cMic?'#524c44':'#2e2b27'),
+            boxShadow:i===s.cMic?'inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.35)':'none'}})),
+        summary:(1 + (s.cCamOn?1:0) + (s.cMicOn?1:0)) + ' sources → ~/Movies/ReelDock'
+      };
+    })();
+
+    return {
+      a:A, b:B, c:C,
+      notesA:['Two cameras and three mics fit without the panel growing — the list only exists while you are choosing.',
+        'Turning the camera off hides its device row, so a phone-only recording is two lines.',
+        'Costs the most height of the three while a list is open.'],
+      notesB:['Stays four rows at any device count; best fit for the real rail next to the checklist.',
+        'The menu floats, so the panel never reflows and nothing below it jumps.',
+        'You cannot compare two cameras without opening the menu twice.'],
+      notesC:['You pick the camera by looking at its picture, and the mic by watching it react to your voice.',
+        'Wrong device is obvious before recording rather than after.',
+        'Tallest of the three; the shelf needs about 220px.'],
+      recipe:['value row: recessed, inset 0 1px 3px','menu: raised +1 step, 16px drop shadow',
+        'checkmark column: 16px, accent when set','mic rows carry a live level']
+    };
+  }
+}
+</script>
+</body>
+</html>

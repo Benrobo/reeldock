@@ -13,3 +13,5 @@ The correct future implementation is:
 - Leave the setup UI disabled or clearly unavailable until the native capture path can prove the track works on physical devices.
 
 If playing video on the iPhone makes the physical phone seem muted, macOS may be routing or taking ownership of that audio path while the USB capture device is active. Do not solve that by faking audio in React. The native recorder needs to inspect the AVFoundation/CoreMediaIO device inputs and record the real audio stream when macOS exposes one.
+
+QuickTime being able to play or monitor phone audio means macOS can see audio on the iPhone capture path. It does not mean ReelDock is already recording that audio. The setup UI may show the stream as detected, but the toggle must stay disabled until Swift writes and verifies a separate phone-audio track.

@@ -1,6 +1,6 @@
 # Native Preview Layout Warning
 
-This note exists so future agents do not confuse preview calibration with the real layout system.
+This note exists so future work does not confuse preview calibration with the real layout system.
 
 ## What The Current Constants Do
 

@@ -64,6 +64,7 @@ export type CaptureSource = {
   label: string;
   kind: CaptureSourceKind;
   state: CaptureSourceState;
+  hasAudio?: boolean;
 };
 
 export const CANVAS_BACKGROUNDS = [
