@@ -7,7 +7,7 @@ import {
   type MicrophoneMeterSnapshot,
 } from "@/modules/capture/lib/microphone-meter";
 
-const POLL_INTERVAL_MS = 50;
+const POLL_INTERVAL_MS = 100;
 
 const idleMeter: MicrophoneMeterSnapshot = {
   active: false,
