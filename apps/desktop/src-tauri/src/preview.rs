@@ -45,6 +45,8 @@ extern "C" {
     );
     fn reeldock_stop_preview(surface: *const c_char);
     fn reeldock_set_preview_countdown(window: *mut c_void, value: *const c_char);
+    fn reeldock_start_phone_audio_monitor(unique_id: *const c_char, volume: f32) -> bool;
+    fn reeldock_stop_phone_audio_monitor();
 }
 
 #[tauri::command]
@@ -149,4 +151,23 @@ pub fn set_preview_countdown(
         reeldock_set_preview_countdown(ns_window, pointer);
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn start_phone_audio_monitor(unique_id: String, volume: f32) -> Result<bool, String> {
+    // This command controls live monitoring only: iPhone audio -> Mac speakers/headphones.
+    // Recording still happens through the separate phone.mov capture output in Swift.
+    // A false result means the preview session is not ready yet, so the UI may retry.
+    let unique_id = CString::new(unique_id).map_err(|error| error.to_string())?;
+    Ok(unsafe { reeldock_start_phone_audio_monitor(unique_id.as_ptr(), volume) })
+}
+
+#[tauri::command]
+pub fn stop_phone_audio_monitor() {
+    // Stop live phone-audio playback without stopping the preview or recording session.
+    // Swift removes only AVCaptureAudioPreviewOutput from the phone capture session.
+    // The command is fire-and-forget because cleanup is idempotent.
+    unsafe {
+        reeldock_stop_phone_audio_monitor();
+    }
 }

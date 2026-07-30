@@ -9,6 +9,7 @@ private final class PreviewSurface {
   let session: AVCaptureSession
   let overlay: NSView
   let previewLayer: AVCaptureVideoPreviewLayer
+  var audioPreviewOutput: AVCaptureAudioPreviewOutput?
 
   init(session: AVCaptureSession, overlay: NSView, previewLayer: AVCaptureVideoPreviewLayer) {
     self.session = session
@@ -32,7 +33,6 @@ private final class PreviewHostView: NSView {
     return nil
   }
 }
-
 
 // This draws a black background with a semi-transparent countdown number.
 // It's layered above the preview surface and animated when recording starts.
@@ -133,8 +133,13 @@ final class PreviewManager {
     }
     overlay.layer?.addSublayer(previewLayer)
 
+    let surface = PreviewSurface(session: session, overlay: overlay, previewLayer: previewLayer)
+    if id == "phone" {
+      installMutedAudioMonitor(surface)
+    }
+
     host.addSubview(overlay)
-    surfaces[id] = PreviewSurface(session: session, overlay: overlay, previewLayer: previewLayer)
+    surfaces[id] = surface
 
     DispatchQueue.global(qos: .userInitiated).async {
       session.startRunning()
@@ -158,9 +163,53 @@ final class PreviewManager {
   }
 
   func stop(id: String) {
+    stopAudioMonitor(id: id)
     guard let surface = surfaces.removeValue(forKey: id) else { return }
     surface.session.stopRunning()
     surface.overlay.removeFromSuperview()
+  }
+
+  private func installMutedAudioMonitor(_ surface: PreviewSurface) {
+    // Add the phone audio preview output once while the capture session is being built.
+    // Later Sound toggles only change volume, avoiding session reconfiguration flashes.
+    // A muted output is silent, but ready for instant monitoring when the user turns Sound on.
+    // This is intentional: add/remove output calls can make AVCaptureVideoPreviewLayer go dark briefly.
+    let output = AVCaptureAudioPreviewOutput()
+    output.volume = 0
+    guard surface.session.canAddOutput(output) else { return }
+    surface.session.addOutput(output)
+    surface.audioPreviewOutput = output
+  }
+
+  func startAudioMonitor(id: String, uniqueId: String, volume: Float) -> Bool {
+    // This monitors captured phone audio live through the Mac output device.
+    // It does not write media; phone audio is still recorded inside phone.mov by the file output.
+    // Keeping monitor output separate lets users hear demos without changing source files.
+    guard let surface = surfaces[id] else { return false }
+    let hasDevice = surface.session.inputs.contains { input in
+      guard let deviceInput = input as? AVCaptureDeviceInput else { return false }
+      return deviceInput.device.uniqueID == uniqueId
+    }
+    guard hasDevice else { return false }
+
+    if let existing = surface.audioPreviewOutput {
+      existing.volume = volume
+      return true
+    }
+
+    installMutedAudioMonitor(surface)
+    guard let output = surface.audioPreviewOutput else { return false }
+    output.volume = volume
+    return true
+  }
+
+  func stopAudioMonitor(id: String) {
+    // Muting stops live speaker playback without changing capture-session outputs.
+    // Removing outputs while video preview is running can briefly blank the phone preview.
+    // Keeping the muted output attached makes Sound toggles visually stable.
+    // The output is released naturally when the whole preview session stops.
+    guard let surface = surfaces[id], let output = surface.audioPreviewOutput else { return }
+    output.volume = 0
   }
 
   func recordingSession(id: String, uniqueId: String) -> AVCaptureSession? {
@@ -381,5 +430,32 @@ public func reeldock_set_preview_countdown(
   onMain {
     let window = Unmanaged<NSWindow>.fromOpaque(windowPtr).takeUnretainedValue()
     setCountdownOverlay(window, value: value)
+  }
+}
+
+@_cdecl("reeldock_start_phone_audio_monitor")
+public func reeldock_start_phone_audio_monitor(
+  _ uniqueId: UnsafePointer<CChar>?,
+  _ volume: Float
+) -> Bool {
+  // Rust calls this over FFI when the setup Sound toggle is enabled.
+  // The selected phone uniqueId protects against routing audio from a stale preview session.
+  // Returning Bool lets React retry while the native preview surface is still starting.
+  guard let uniqueId else { return false }
+  let device = String(cString: uniqueId)
+  var started = false
+  onMain {
+    started = PreviewManager.shared.startAudioMonitor(id: "phone", uniqueId: device, volume: volume)
+  }
+  return started
+}
+
+@_cdecl("reeldock_stop_phone_audio_monitor")
+public func reeldock_stop_phone_audio_monitor() {
+  // This is intentionally global because the MVP only has one phone preview surface.
+  // It is called on toggle off, setup unmount, and preview cleanup.
+  // The actual recording session remains responsible for saving phone.mov.
+  onMain {
+    PreviewManager.shared.stopAudioMonitor(id: "phone")
   }
 }

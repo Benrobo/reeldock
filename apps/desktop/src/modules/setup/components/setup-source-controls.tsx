@@ -28,14 +28,13 @@ const sourceKindLabels = {
   microphone: "microphone",
 } as const satisfies Record<CaptureSource["kind"], string>;
 
-const phoneAudioCaptureAvailable = false;
-
 type OptionalSourceKind = Extract<CaptureSource["kind"], "webcam" | "microphone">;
 
 function sourceMeta(source: CaptureSource) {
   if (source.state === "permission-required") return "permission needed";
   if (source.state === "unavailable") return "unavailable";
   if (source.kind === "phone") return "USB";
+  if (source.kind === "microphone" && source.isDefault) return "system default";
   if (source.kind === "webcam" && source.width && source.height) {
     return `${source.width} x ${source.height}`;
   }
@@ -54,10 +53,14 @@ type SetupSourceControlsProps = {
   hasPhone: boolean;
   webcamRecordingEnabled: boolean;
   microphoneRecordingEnabled: boolean;
+  phoneAudioMonitoringActive?: boolean;
+  phoneAudioMonitoringEnabled: boolean;
+  showPhoneAudioMonitoringControlDuringRecordingSetup: boolean;
   disabled?: boolean;
   onSelectSource: (source: CaptureSource) => void;
   onWebcamRecordingEnabledChange: (enabled: boolean) => void;
   onMicrophoneRecordingEnabledChange: (enabled: boolean) => void;
+  onPhoneAudioMonitoringEnabledChange: (enabled: boolean) => void;
 };
 
 export function SetupSourceControls({
@@ -72,10 +75,14 @@ export function SetupSourceControls({
   hasPhone,
   webcamRecordingEnabled,
   microphoneRecordingEnabled,
+  phoneAudioMonitoringActive = false,
+  phoneAudioMonitoringEnabled,
+  showPhoneAudioMonitoringControlDuringRecordingSetup,
   disabled = false,
   onSelectSource,
   onWebcamRecordingEnabledChange,
   onMicrophoneRecordingEnabledChange,
+  onPhoneAudioMonitoringEnabledChange,
 }: SetupSourceControlsProps) {
   const phoneSource = phoneSources.find((source) => source.id === phoneSourceId) ?? phoneSources[0];
   const webcamSource =
@@ -113,7 +120,16 @@ export function SetupSourceControls({
           selectedSource={microphoneSource}
           sources={microphoneSources}
         />
-        <PhoneAudioSourceRow hasPhone={hasPhone} phoneAudioDetected={phoneAudioDetected} />
+        {showPhoneAudioMonitoringControlDuringRecordingSetup ? (
+          <PhoneAudioSourceRow
+            disabled={disabled}
+            hasPhone={hasPhone}
+            monitoringActive={phoneAudioMonitoringActive}
+            monitoringEnabled={phoneAudioMonitoringEnabled}
+            onMonitoringEnabledChange={onPhoneAudioMonitoringEnabledChange}
+            phoneAudioDetected={phoneAudioDetected}
+          />
+        ) : null}
       </div>
     </section>
   );
@@ -247,31 +263,54 @@ function SelectableSourceRow({
 }
 
 type PhoneAudioSourceRowProps = {
+  disabled: boolean;
   hasPhone: boolean;
+  monitoringActive: boolean;
+  monitoringEnabled: boolean;
+  onMonitoringEnabledChange: (enabled: boolean) => void;
   phoneAudioDetected: boolean;
 };
 
-function PhoneAudioSourceRow({ hasPhone, phoneAudioDetected }: PhoneAudioSourceRowProps) {
+function PhoneAudioSourceRow({
+  disabled,
+  hasPhone,
+  monitoringActive,
+  monitoringEnabled,
+  onMonitoringEnabledChange,
+  phoneAudioDetected,
+}: PhoneAudioSourceRowProps) {
   const status = !hasPhone
     ? "Connect phone first"
     : phoneAudioDetected
-      ? "Detected, recorder not wired yet"
+      ? monitoringEnabled
+        ? monitoringActive
+          ? "Monitoring to Mac output"
+          : "Starting monitor"
+        : "Recorded, monitor off"
       : "No phone audio stream detected";
 
   return (
     <SourceRoleRow
       action={
         <Switch
-          checked={false}
-          disabled={!phoneAudioCaptureAvailable || !hasPhone}
+          checked={phoneAudioDetected && monitoringEnabled}
+          disabled={!phoneAudioDetected || disabled}
           label="Phone sound"
+          onChange={onMonitoringEnabledChange}
         />
       }
-      active={phoneAudioDetected}
+      active={phoneAudioDetected && monitoringEnabled}
       kind="sound"
       label="Sound"
     >
-      <div className="border-disabled-line bg-track text-fg-faint flex h-[34px] min-w-0 flex-1 items-center rounded-lg border px-3 text-[12.5px]">
+      <div
+        className={cn(
+          "flex h-[34px] min-w-0 flex-1 items-center rounded-lg border px-3 text-[12.5px]",
+          phoneAudioDetected
+            ? "border-well-line bg-well text-fg-2 shadow-well"
+            : "border-disabled-line bg-track text-fg-faint"
+        )}
+      >
         <span className="truncate">{status}</span>
       </div>
     </SourceRoleRow>

@@ -109,6 +109,18 @@ export function PreferencesPage() {
                     <ValueChip>{preferences.phoneCapture}</ValueChip>
                   </SettingsRow>
                   <SettingsRow
+                    hint="Shows the phone audio monitor switch on recording setup."
+                    label="Phone audio monitor control"
+                  >
+                    <Switch
+                      checked={preferences.showPhoneAudioMonitoringControlDuringRecordingSetup}
+                      label="Monitor control"
+                      onChange={(showPhoneAudioMonitoringControlDuringRecordingSetup) =>
+                        void save({ showPhoneAudioMonitoringControlDuringRecordingSetup })
+                      }
+                    />
+                  </SettingsRow>
+                  <SettingsRow
                     hint="Uses VideoToolbox where available."
                     label="Hardware acceleration"
                   >

@@ -10,6 +10,14 @@ const preferencesSchema = z.object({
   recordingQuality: z.string().min(1),
   phoneCapture: z.string().min(1),
   hardwareAcceleration: z.boolean(),
+  showPhoneAudioMonitoringControlDuringRecordingSetup: z.boolean(),
+  selectedSources: z
+    .object({
+      phone: z.string().optional(),
+      webcam: z.string().optional(),
+      microphone: z.string().optional(),
+    })
+    .default({}),
   onboardingRequirements: z.object({
     phone: onboardingRequirementStatusSchema,
   }),

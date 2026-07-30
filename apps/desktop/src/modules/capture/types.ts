@@ -7,6 +7,7 @@ export const captureSourceSchema = z.object({
   kind: z.enum(["phone", "webcam", "microphone"]),
   state: z.enum(["available", "unavailable", "permission-required"]),
   hasAudio: z.boolean().optional(),
+  isDefault: z.boolean().optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
 });

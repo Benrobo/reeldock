@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -23,11 +23,16 @@ import {
 import { ColorIcon } from "@/components/color-icon";
 import { timecode } from "@/lib/format";
 import { CapturePreview } from "@/modules/canvas";
-import { useCaptureSources, useMicrophoneMeter } from "@/modules/capture";
+import {
+  useCaptureSources,
+  useMicrophoneMeter,
+  usePhoneAudioMonitor,
+} from "@/modules/capture";
 import { useOnboardingRequirements } from "@/modules/onboarding";
 import { useProject } from "@/modules/project";
 import { REELDOCK_RECORDINGS_DIR } from "@/constants/paths";
 import { SETUP_CHECKLIST } from "@/constants/recording";
+import { preferencesService, type AppPreferences } from "@/services";
 import { SetupSourceControls } from "./setup-source-controls";
 import type { SetupSourcesState } from "../hooks/use-setup-sources";
 import { useSetupRecording } from "../hooks/use-setup-recording";
@@ -41,6 +46,7 @@ export function SetupPage() {
   const doc = useProject((state) => state.doc);
   const loadProject = useProject((state) => state.loadProject);
   const setActiveProject = useProject((state) => state.setActiveProject);
+  const [preferences, setPreferences] = useState<AppPreferences | null>(null);
   const setupSources = useSetupSources(sources);
   const recording = useSetupRecording({
     activeProject,
@@ -57,6 +63,11 @@ export function SetupPage() {
     setupSources.microphoneSource?.uniqueId,
     setupSources.microphoneEnabled && !recording.locked
   );
+  const phoneAudioDetected = Boolean(setupSources.phoneSource?.hasAudio);
+  const phoneAudioMonitorActive = usePhoneAudioMonitor(
+    setupSources.phoneSource?.uniqueId,
+    phoneAudioDetected && setupSources.phoneAudioMonitoringEnabled
+  );
 
   useEffect(() => {
     if (onboarding.loading || onboarding.complete) return;
@@ -66,26 +77,49 @@ export function SetupPage() {
   useEffect(() => {
     if (!recording.storageAvailable) return;
     const value =
-      recording.state.status === "counting-down" ? String(recording.state.value) : null;
+      recording.state.status === "counting-down"
+        ? String(recording.state.value)
+        : null;
     void invoke("set_preview_countdown", { value });
   }, [recording.state, recording.storageAvailable]);
 
   useEffect(() => {
     return () => {
-      if (recording.storageAvailable) void invoke("set_preview_countdown", { value: null });
+      if (recording.storageAvailable)
+        void invoke("set_preview_countdown", { value: null });
     };
   }, [recording.storageAvailable]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    preferencesService
+      .get()
+      .then((value) => {
+        if (!cancelled) setPreferences(value);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <main className="bg-window relative flex h-full min-w-0 flex-col">
       <header className="border-titlebar-line bg-titlebar flex h-[52px] shrink-0 items-center gap-3.5 border-b px-[18px]">
         <Link to="/">
-          <Button leading={<ColorIcon icon={ArrowLeft01Icon} size={15} tone="back" />} size="mini">
+          <Button
+            leading={<ColorIcon icon={ArrowLeft01Icon} size={15} tone="back" />}
+            size="mini"
+          >
             Projects
           </Button>
         </Link>
         <div className="text-[13px] font-semibold">Recording setup</div>
-        <div className="text-fg-hint text-xs">{setupSources.readySources.length} sources ready</div>
+        <div className="text-fg-hint text-xs">
+          {setupSources.readySources.length} sources ready
+        </div>
       </header>
 
       <div className="flex min-h-0 min-w-0 flex-1">
@@ -111,17 +145,24 @@ export function SetupPage() {
               className="rounded-none border-x-0 border-t-0 px-5"
               tone="warn"
             >
-              No iPhone found. Connect it with a cable, unlock it, and tap Trust This Computer.
+              No iPhone found. Connect it with a cable, unlock it, and tap Trust
+              This Computer.
             </Banner>
           ) : null}
 
           <div className="relative flex min-h-0 flex-1 items-stretch justify-stretch">
             <CapturePreview
               phoneDimensions={setupSources.phoneSource}
-              phoneUniqueId={setupSources.hasPhone ? setupSources.phoneSource?.uniqueId : undefined}
+              phoneUniqueId={
+                setupSources.hasPhone
+                  ? setupSources.phoneSource?.uniqueId
+                  : undefined
+              }
               recordingActive={recording.locked}
               webcamUniqueId={
-                setupSources.webcamEnabled ? setupSources.webcamSource?.uniqueId : undefined
+                setupSources.webcamEnabled
+                  ? setupSources.webcamSource?.uniqueId
+                  : undefined
               }
             />
             <RecordingPreviewOverlay
@@ -143,12 +184,20 @@ export function SetupPage() {
             ) : (
               <Button
                 disabled={!recording.canRecord || recording.locked}
-                leading={recording.locked ? <ActivitySpinner size={16} /> : <RecordDot />}
+                leading={
+                  recording.locked ? (
+                    <ActivitySpinner size={16} />
+                  ) : (
+                    <RecordDot />
+                  )
+                }
                 onClick={() => void recording.start()}
                 size="md"
                 variant="record"
               >
-                {recording.state.status === "stopping" ? "Finalizing" : "Record"}
+                {recording.state.status === "stopping"
+                  ? "Finalizing"
+                  : "Record"}
               </Button>
             )}
             <div
@@ -170,7 +219,9 @@ export function SetupPage() {
             </div>
             <div className="border-control-line bg-track shadow-track flex h-9 items-center gap-2.5 rounded-lg border px-3">
               <ColorIcon icon={Timer01Icon} size={14} tone="menu" />
-              <Timecode className="text-[15px]">{timecode(recording.elapsedSeconds)}</Timecode>
+              <Timecode className="text-[15px]">
+                {timecode(recording.elapsedSeconds)}
+              </Timecode>
             </div>
             <InputMeter
               active={microphoneMeter.active && setupSources.microphoneEnabled}
@@ -181,11 +232,14 @@ export function SetupPage() {
           </footer>
         </div>
 
-        <aside className="border-titlebar-line bg-titlebar flex w-[420px] shrink-0 flex-col gap-6 overflow-y-auto border-l px-5 py-5">
+        <aside className="border-titlebar-line bg-titlebar flex w-[380px] shrink-0 flex-col gap-6 overflow-y-auto border-l px-5 py-5">
           <div>
-            <h2 className="text-[15px] font-semibold tracking-[-0.01em]">Recording setup</h2>
+            <h2 className="text-[15px] font-semibold tracking-[-0.01em]">
+              Recording setup
+            </h2>
             <p className="text-fg-3 mt-1 text-[12.5px] leading-[1.5]">
-              Each source is saved as its own file. Arrange the layout later in the editor.
+              Each source is saved as its own file. Arrange the layout later in
+              the editor.
             </p>
           </div>
 
@@ -199,22 +253,41 @@ export function SetupPage() {
               <SetupSourceControls
                 disabled={recording.locked}
                 hasPhone={setupSources.hasPhone}
-                microphoneRecordingEnabled={setupSources.microphoneRecordingEnabled}
+                microphoneRecordingEnabled={
+                  setupSources.microphoneRecordingEnabled
+                }
                 microphoneMeterActive={microphoneMeter.active}
                 microphoneMeterLevel={microphoneMeter.level}
                 microphoneSourceId={setupSources.microphoneSource?.id}
                 microphoneSources={setupSources.microphoneSources}
-                onMicrophoneRecordingEnabledChange={setupSources.setMicrophoneRecordingEnabled}
+                onMicrophoneRecordingEnabledChange={
+                  setupSources.setMicrophoneRecordingEnabled
+                }
+                onPhoneAudioMonitoringEnabledChange={
+                  setupSources.setPhoneAudioMonitoringEnabled
+                }
                 onSelectSource={setupSources.selectSource}
-                onWebcamRecordingEnabledChange={setupSources.setWebcamRecordingEnabled}
+                onWebcamRecordingEnabledChange={
+                  setupSources.setWebcamRecordingEnabled
+                }
                 phoneSourceId={setupSources.phoneSource?.id}
+                phoneAudioMonitoringActive={phoneAudioMonitorActive}
+                phoneAudioMonitoringEnabled={
+                  setupSources.phoneAudioMonitoringEnabled
+                }
                 phoneSources={setupSources.phoneSources}
+                showPhoneAudioMonitoringControlDuringRecordingSetup={Boolean(
+                  preferences?.showPhoneAudioMonitoringControlDuringRecordingSetup
+                )}
                 webcamRecordingEnabled={setupSources.webcamRecordingEnabled}
                 webcamSourceId={setupSources.webcamSource?.id}
                 webcamSources={setupSources.webcamSources}
               />
 
-              <Checklist items={[...SETUP_CHECKLIST]} title="Before you start" />
+              <Checklist
+                items={[...SETUP_CHECKLIST]}
+                title="Before you start"
+              />
             </>
           )}
         </aside>
@@ -245,7 +318,9 @@ function RecordingPreviewOverlay({
 
   return (
     <div className="pointer-events-none absolute left-6 top-5 flex items-center gap-2.5">
-      <RecordingPill>{state.status === "stopping" ? "Finalizing" : "Recording"}</RecordingPill>
+      <RecordingPill>
+        {state.status === "stopping" ? "Finalizing" : "Recording"}
+      </RecordingPill>
       <div className="border-raised-line bg-linear-to-b from-raised-top to-raised-bottom shadow-row rounded-lg border px-3 py-1.5">
         <Timecode className="text-[13px]">{timecode(elapsedSeconds)}</Timecode>
       </div>
@@ -267,7 +342,8 @@ function RecordingStatusText({
   storageAvailable: boolean;
 }) {
   if (state.status === "creating-project") return "Preparing project";
-  if (state.status === "counting-down") return `Recording starts in ${state.value}`;
+  if (state.status === "counting-down")
+    return `Recording starts in ${state.value}`;
   if (state.status === "recording") return `Recording ${readySources} sources`;
   if (state.status === "stopping") return "Finalizing files";
   if (state.status === "failed") return state.message;
@@ -287,7 +363,8 @@ function InputMeter({
   level: number;
   sourceLabel?: string;
 }) {
-  const status = !enabled || !sourceLabel ? "Off" : active ? "Active" : "No signal";
+  const status =
+    !enabled || !sourceLabel ? "Off" : active ? "Active" : "No signal";
 
   return (
     <div className="flex min-w-[230px] items-center gap-2.5">
@@ -326,7 +403,9 @@ function RecordingSessionPanel({
     },
     {
       label: "Camera",
-      value: setupSources.webcamEnabled ? (setupSources.webcamSource?.label ?? "Camera") : "Off",
+      value: setupSources.webcamEnabled
+        ? (setupSources.webcamSource?.label ?? "Camera")
+        : "Off",
       active: setupSources.webcamEnabled,
     },
     {
@@ -344,7 +423,9 @@ function RecordingSessionPanel({
       <div className="border-surface-line bg-surface shadow-panel rounded-[12px] border p-3.5">
         <div className="flex items-center justify-between gap-4">
           <RecordingPill />
-          <Timecode className="text-[20px]">{timecode(elapsedSeconds)}</Timecode>
+          <Timecode className="text-[20px]">
+            {timecode(elapsedSeconds)}
+          </Timecode>
         </div>
         <div className="mt-3 flex flex-col gap-2">
           {rows.map((row) => (
@@ -355,7 +436,9 @@ function RecordingSessionPanel({
             >
               <div className="min-w-0 flex-1">
                 <div className="text-[12.5px] font-semibold">{row.label}</div>
-                <div className="text-fg-3 mt-0.5 truncate text-[11.5px]">{row.value}</div>
+                <div className="text-fg-3 mt-0.5 truncate text-[11.5px]">
+                  {row.value}
+                </div>
               </div>
             </SurfaceRow>
           ))}

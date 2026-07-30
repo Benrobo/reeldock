@@ -10,6 +10,8 @@ export const DEFAULT_PREFERENCES = {
   recordingQuality: RECORDING_QUALITY_LABEL,
   phoneCapture: "USB iPhone",
   hardwareAcceleration: true,
+  showPhoneAudioMonitoringControlDuringRecordingSetup: false,
+  selectedSources: {},
   onboardingRequirements: {
     phone: "pending",
   },

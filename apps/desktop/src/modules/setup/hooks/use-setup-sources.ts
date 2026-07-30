@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CaptureSource } from "@/modules/capture";
+import { preferencesService } from "@/services";
 
 const selectableSourceKinds = ["phone", "webcam", "microphone"] as const;
 
@@ -21,13 +22,16 @@ function selectedSourceForKind(
   selectedId?: string
 ) {
   const available = availableSourcesOfKind(sources, kind);
-  return available.find((source) => source.id === selectedId) ?? available[0];
+  const defaultSource =
+    kind === "microphone" ? (available.find((source) => source.isDefault) ?? available[0]) : available[0];
+  return available.find((source) => source.id === selectedId) ?? defaultSource;
 }
 
 export function useSetupSources(sources: CaptureSource[]) {
   const [selectedSourceIds, setSelectedSourceIds] = useState<SelectedSourceIds>({});
   const [webcamRecordingEnabled, setWebcamRecordingEnabled] = useState(true);
   const [microphoneRecordingEnabled, setMicrophoneRecordingEnabled] = useState(true);
+  const [phoneAudioMonitoringEnabled, setPhoneAudioMonitoringEnabled] = useState(true);
   const phoneSources = sources.filter((source) => source.kind === "phone");
   const webcamSources = sources.filter((source) => source.kind === "webcam");
   const microphoneSources = sources.filter((source) => source.kind === "microphone");
@@ -61,6 +65,21 @@ export function useSetupSources(sources: CaptureSource[]) {
   ].filter((source): source is RecordingSourceSelection => Boolean(source));
 
   useEffect(() => {
+    let cancelled = false;
+
+    preferencesService
+      .get()
+      .then((preferences) => {
+        if (!cancelled) setSelectedSourceIds(preferences.selectedSources);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     setSelectedSourceIds((current) => {
       let changed = false;
       const next = { ...current };
@@ -70,15 +89,11 @@ export function useSetupSources(sources: CaptureSource[]) {
         const available = availableSourcesOfKind(sources, kind);
 
         if (!available.length) {
-          if (selectedId) {
-            delete next[kind];
-            changed = true;
-          }
           continue;
         }
 
-        if (!selectedId || !available.some((source) => source.id === selectedId)) {
-          next[kind] = available[0].id;
+        if (!selectedId) {
+          next[kind] = selectedSourceForKind(sources, kind)?.id;
           changed = true;
         }
       }
@@ -89,7 +104,9 @@ export function useSetupSources(sources: CaptureSource[]) {
 
   const selectSource = (source: CaptureSource) => {
     if (source.state !== "available") return;
-    setSelectedSourceIds((current) => ({ ...current, [source.kind]: source.id }));
+    const next = { ...selectedSourceIds, [source.kind]: source.id };
+    setSelectedSourceIds(next);
+    void preferencesService.save({ selectedSources: next }).catch(() => {});
   };
 
   return {
@@ -106,8 +123,10 @@ export function useSetupSources(sources: CaptureSource[]) {
     recordingSources,
     webcamRecordingEnabled,
     microphoneRecordingEnabled,
+    phoneAudioMonitoringEnabled,
     setWebcamRecordingEnabled,
     setMicrophoneRecordingEnabled,
+    setPhoneAudioMonitoringEnabled,
     selectSource,
   };
 }

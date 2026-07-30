@@ -201,6 +201,7 @@ private final class MicrophoneMeterManager: NSObject, AVCaptureAudioDataOutputSa
 }
 
 private func source(_ kind: String, _ device: AVCaptureDevice) -> [String: Any] {
+  let defaultAudioDevice = kind == "microphone" ? AVCaptureDevice.default(for: .audio) : nil
   var result: [String: Any] = [
     "id": "\(kind):\(device.uniqueID)",
     "uniqueId": device.uniqueID,
@@ -208,6 +209,9 @@ private func source(_ kind: String, _ device: AVCaptureDevice) -> [String: Any] 
     "kind": kind,
     "state": "available",
   ]
+  if kind == "microphone", defaultAudioDevice?.uniqueID == device.uniqueID {
+    result["isDefault"] = true
+  }
   if device.hasMediaType(.audio) || device.hasMediaType(.muxed) {
     result["hasAudio"] = true
   }
