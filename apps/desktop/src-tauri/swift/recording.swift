@@ -1,4 +1,6 @@
 import AVFoundation
+import CoreMedia
+import CoreVideo
 import Foundation
 
 private struct NativeRecordingSource: Codable {
@@ -48,8 +50,24 @@ private struct NativeErrorResult: Codable {
   let error: String
 }
 
-private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecordingDelegate {
-  // One track represents one separately saved source: phone, webcam, or microphone.
+private protocol NativeRecordingTrackProtocol: AnyObject {
+  var kind: String { get }
+  var ownsSession: Bool { get }
+  var session: AVCaptureSession { get }
+  var isRecording: Bool { get }
+
+  func start(recordingStartedAt: Date, hostStartTime: CMTime)
+  func stop()
+  func waitUntilFinished()
+  func result() -> NativeTrackResult
+  func normalizeDuration(to sessionDurationMs: Int)
+  func cleanup()
+}
+
+private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecordingDelegate,
+  NativeRecordingTrackProtocol
+{
+  // One movie-output track represents one separately saved webcam or microphone source.
   // AVCapture writes asynchronously and reports completion through the delegate callback.
   // The manager reads this object later to update source_tracks with file path and duration.
   let kind: String
@@ -65,6 +83,10 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
   private var durationMs = 0
   private var requestedStartAt: Date?
 
+  var isRecording: Bool {
+    output.isRecording
+  }
+
   init(
     kind: String, filePath: String, session: AVCaptureSession, output: AVCaptureMovieFileOutput,
     ownsSession: Bool, removesOutputOnCleanup: Bool
@@ -77,7 +99,7 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
     self.removesOutputOnCleanup = removesOutputOnCleanup
   }
 
-  func start(recordingStartedAt: Date) {
+  func start(recordingStartedAt: Date, hostStartTime: CMTime) {
     lastState = "recording"
     requestedStartAt = recordingStartedAt
     let url = URL(fileURLWithPath: filePath)
@@ -160,11 +182,520 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
   }
 }
 
+private final class NativePhoneTimelineRecordingTrack: NSObject,
+  AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate,
+  NativeRecordingTrackProtocol
+{
+  let kind = "phone"
+  let filePath: String
+  let session: AVCaptureSession
+  let ownsSession: Bool
+
+  private let videoOutput = AVCaptureVideoDataOutput()
+  private var audioOutput: AVCaptureAudioDataOutput?
+  private let sampleQueue = DispatchQueue(label: "reeldock.phone-timeline.samples")
+  private let writerQueue = DispatchQueue(label: "reeldock.phone-timeline.writer")
+  private let finishedSemaphore = DispatchSemaphore(value: 0)
+  private let frameRate: Int32 = 30
+  private let preferredWidth: Int32
+  private let preferredHeight: Int32
+  private let lock = NSLock()
+
+  private var lastState = "planned"
+  private var lastError: String?
+  private var durationMs = 0
+  private var didAddVideoOutput = false
+  private var didAddAudioOutput = false
+  private var latestPixelBuffer: CVPixelBuffer?
+  private var latestDimensions: CMVideoDimensions?
+  private var assetWriter: AVAssetWriter?
+  private var videoInput: AVAssetWriterInput?
+  private var audioInput: AVAssetWriterInput?
+  private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
+  private var frameTimer: DispatchSourceTimer?
+  private var recordingStartHostTime = CMTime.zero
+  private var nextFrameIndex: Int64 = 0
+  private var acceptingSamples = false
+  private var firstAudioSourceTime: CMTime?
+  private var firstAudioTimelineTime: CMTime?
+
+  var isRecording: Bool {
+    writerQueue.sync { acceptingSamples }
+  }
+
+  init(filePath: String, session: AVCaptureSession, device: AVCaptureDevice, ownsSession: Bool)
+    throws
+  {
+    self.filePath = filePath
+    self.session = session
+    self.ownsSession = ownsSession
+
+    let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
+    preferredWidth = max(1, dimensions.width)
+    preferredHeight = max(1, dimensions.height)
+
+    super.init()
+
+    videoOutput.alwaysDiscardsLateVideoFrames = true
+    videoOutput.videoSettings = [
+      kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+    ]
+
+    session.beginConfiguration()
+    guard session.canAddOutput(videoOutput) else {
+      session.commitConfiguration()
+      throw NSError(domain: "ReelDockRecording", code: 13, userInfo: [
+        NSLocalizedDescriptionKey: "Could not read phone frames for timeline recording."
+      ])
+    }
+    session.addOutput(videoOutput)
+    didAddVideoOutput = true
+
+    if device.hasMediaType(.audio) || device.hasMediaType(.muxed) {
+      let nextAudioOutput = AVCaptureAudioDataOutput()
+      guard session.canAddOutput(nextAudioOutput) else {
+        if session.outputs.contains(videoOutput) {
+          session.removeOutput(videoOutput)
+          didAddVideoOutput = false
+        }
+        session.commitConfiguration()
+        throw NSError(domain: "ReelDockRecording", code: 16, userInfo: [
+          NSLocalizedDescriptionKey: "Could not read phone audio for timeline recording."
+        ])
+      }
+      session.addOutput(nextAudioOutput)
+      audioOutput = nextAudioOutput
+      didAddAudioOutput = true
+    }
+    session.commitConfiguration()
+
+    videoOutput.setSampleBufferDelegate(self, queue: sampleQueue)
+    audioOutput?.setSampleBufferDelegate(self, queue: sampleQueue)
+  }
+
+  func start(recordingStartedAt: Date, hostStartTime: CMTime) {
+    writerQueue.async {
+      if self.acceptingSamples { return }
+      do {
+        try self.prepareWriter()
+        self.recordingStartHostTime = hostStartTime
+        self.nextFrameIndex = 0
+        self.durationMs = 0
+        self.lastState = "recording"
+        self.lastError = nil
+        self.acceptingSamples = true
+        self.firstAudioSourceTime = nil
+        self.firstAudioTimelineTime = nil
+        self.startFrameTimer()
+      } catch {
+        self.lastState = "failed"
+        self.lastError = error.localizedDescription
+        self.cleanup()
+        self.finishedSemaphore.signal()
+      }
+    }
+  }
+
+  func stop() {
+    writerQueue.async {
+      guard self.acceptingSamples else {
+        if self.lastState == "planned" {
+          self.lastState = "failed"
+          self.lastError = "Phone recording was stopped before it started."
+        }
+        self.cleanup()
+        self.finishedSemaphore.signal()
+        return
+      }
+
+      let stopHostTime = self.currentHostTime()
+      self.frameTimer?.cancel()
+      self.frameTimer = nil
+      self.writeDueFrames(until: stopHostTime)
+      self.acceptingSamples = false
+      self.durationMs = self.elapsedMilliseconds(until: stopHostTime)
+      self.videoInput?.markAsFinished()
+      self.audioInput?.markAsFinished()
+
+      guard let assetWriter = self.assetWriter else {
+        self.lastState = "failed"
+        self.lastError = "Phone recording writer was not ready."
+        self.cleanup()
+        self.finishedSemaphore.signal()
+        return
+      }
+
+      assetWriter.finishWriting {
+        self.writerQueue.async {
+          if assetWriter.status == .completed {
+            self.lastState = "recorded"
+            self.lastError = nil
+          } else {
+            self.lastState = "failed"
+            self.lastError =
+              assetWriter.error?.localizedDescription ?? "Phone recording could not be finalized."
+          }
+          self.cleanup()
+          self.finishedSemaphore.signal()
+        }
+      }
+    }
+  }
+
+  func waitUntilFinished() {
+    if finishedSemaphore.wait(timeout: .now() + 120) == .timedOut {
+      writerQueue.sync {
+        lastState = "failed"
+        lastError = "Timed out while finalizing phone recording."
+        cleanup()
+      }
+    }
+  }
+
+  func result() -> NativeTrackResult {
+    writerQueue.sync {
+      NativeTrackResult(
+        kind: kind,
+        state: lastState,
+        filePath: lastState == "failed" ? nil : filePath,
+        startOffsetMs: 0,
+        durationMs: durationMs,
+        error: lastError
+      )
+    }
+  }
+
+  func normalizeDuration(to sessionDurationMs: Int) {
+    writerQueue.sync {
+      if lastState == "recorded" {
+        durationMs = max(durationMs, sessionDurationMs)
+      }
+    }
+  }
+
+  func cleanup() {
+    frameTimer?.cancel()
+    frameTimer = nil
+    videoOutput.setSampleBufferDelegate(nil, queue: nil)
+    audioOutput?.setSampleBufferDelegate(nil, queue: nil)
+
+    if ownsSession {
+      session.stopRunning()
+    }
+
+    if didAddVideoOutput || didAddAudioOutput {
+      session.beginConfiguration()
+      if didAddVideoOutput && session.outputs.contains(videoOutput) {
+        session.removeOutput(videoOutput)
+      }
+      if let audioOutput, didAddAudioOutput, session.outputs.contains(audioOutput) {
+        session.removeOutput(audioOutput)
+      }
+      session.commitConfiguration()
+    }
+
+    didAddVideoOutput = false
+    didAddAudioOutput = false
+    assetWriter = nil
+    videoInput = nil
+    audioInput = nil
+    pixelBufferAdaptor = nil
+    acceptingSamples = false
+  }
+
+  func captureOutput(
+    _ output: AVCaptureOutput,
+    didOutput sampleBuffer: CMSampleBuffer,
+    from connection: AVCaptureConnection
+  ) {
+    if output === videoOutput {
+      storeVideoSample(sampleBuffer)
+      return
+    }
+
+    if let audioOutput, output === audioOutput {
+      appendAudioSample(sampleBuffer)
+    }
+  }
+
+  private func storeVideoSample(_ sampleBuffer: CMSampleBuffer) {
+    guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer),
+      let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer)
+    else { return }
+    let dimensions = CMVideoFormatDescriptionGetDimensions(
+      formatDescription)
+
+    lock.lock()
+    latestPixelBuffer = pixelBuffer
+    latestDimensions = dimensions
+    lock.unlock()
+  }
+
+  private func appendAudioSample(_ sampleBuffer: CMSampleBuffer) {
+    writerQueue.async {
+      guard self.acceptingSamples,
+        let audioInput = self.audioInput,
+        audioInput.isReadyForMoreMediaData
+      else { return }
+
+      let sourceTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+      if self.firstAudioSourceTime == nil {
+        self.firstAudioSourceTime = sourceTime
+        self.firstAudioTimelineTime = self.elapsedTime(until: self.currentHostTime())
+      }
+
+      guard let firstAudioSourceTime = self.firstAudioSourceTime,
+        let firstAudioTimelineTime = self.firstAudioTimelineTime,
+        let retimed = self.retimedAudioSample(
+          sampleBuffer,
+          sourceBase: firstAudioSourceTime,
+          timelineBase: firstAudioTimelineTime
+        )
+      else { return }
+
+      _ = audioInput.append(retimed)
+    }
+  }
+
+  private func prepareWriter() throws {
+    let size = writerSize()
+    let url = URL(fileURLWithPath: filePath)
+    let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
+
+    let bitrate = max(6_000_000, Int(size.width * size.height * 4))
+    let videoInput = AVAssetWriterInput(
+      mediaType: .video,
+      outputSettings: [
+        AVVideoCodecKey: AVVideoCodecType.h264,
+        AVVideoWidthKey: Int(size.width),
+        AVVideoHeightKey: Int(size.height),
+        AVVideoCompressionPropertiesKey: [
+          AVVideoAverageBitRateKey: bitrate,
+          AVVideoExpectedSourceFrameRateKey: Int(frameRate),
+        ],
+      ]
+    )
+    videoInput.expectsMediaDataInRealTime = true
+
+    guard writer.canAdd(videoInput) else {
+      throw NSError(domain: "ReelDockRecording", code: 14, userInfo: [
+        NSLocalizedDescriptionKey: "Could not configure phone video writer."
+      ])
+    }
+    writer.add(videoInput)
+
+    let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+      assetWriterInput: videoInput,
+      sourcePixelBufferAttributes: [
+        kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+        kCVPixelBufferWidthKey as String: Int(size.width),
+        kCVPixelBufferHeightKey as String: Int(size.height),
+      ]
+    )
+
+    var nextAudioInput: AVAssetWriterInput?
+    if audioOutput != nil {
+      let input = AVAssetWriterInput(
+        mediaType: .audio,
+        outputSettings: [
+          AVFormatIDKey: kAudioFormatMPEG4AAC,
+          AVNumberOfChannelsKey: 2,
+          AVSampleRateKey: 48_000,
+          AVEncoderBitRateKey: 128_000,
+        ]
+      )
+      input.expectsMediaDataInRealTime = true
+      guard writer.canAdd(input) else {
+        throw NSError(domain: "ReelDockRecording", code: 17, userInfo: [
+          NSLocalizedDescriptionKey: "Could not configure phone audio writer."
+        ])
+      }
+      writer.add(input)
+      nextAudioInput = input
+    }
+
+    guard writer.startWriting() else {
+      throw NSError(domain: "ReelDockRecording", code: 15, userInfo: [
+        NSLocalizedDescriptionKey: writer.error?.localizedDescription ?? "Could not start phone writer."
+      ])
+    }
+    writer.startSession(atSourceTime: .zero)
+
+    assetWriter = writer
+    self.videoInput = videoInput
+    audioInput = nextAudioInput
+    pixelBufferAdaptor = adaptor
+  }
+
+  private func startFrameTimer() {
+    let timer = DispatchSource.makeTimerSource(queue: writerQueue)
+    timer.schedule(deadline: .now(), repeating: .milliseconds(Int(1000 / frameRate)), leeway: .milliseconds(4))
+    timer.setEventHandler { [weak self] in
+      guard let self else { return }
+      self.writeDueFrames(until: self.currentHostTime())
+    }
+    frameTimer = timer
+    timer.resume()
+  }
+
+  private func writeDueFrames(until hostTime: CMTime) {
+    guard acceptingSamples,
+      let videoInput,
+      let pixelBufferAdaptor,
+      videoInput.isReadyForMoreMediaData
+    else { return }
+
+    let elapsed = elapsedTime(until: hostTime)
+    let seconds = max(0, CMTimeGetSeconds(elapsed))
+    let targetFrameIndex = Int64((seconds * Double(frameRate)).rounded(.down))
+
+    while nextFrameIndex <= targetFrameIndex {
+      autoreleasepool {
+        let presentationTime = CMTime(value: nextFrameIndex, timescale: frameRate)
+        if let pixelBuffer = framePixelBuffer() {
+          if !pixelBufferAdaptor.append(pixelBuffer, withPresentationTime: presentationTime) {
+            lastState = "failed"
+            lastError =
+              assetWriter?.error?.localizedDescription ?? "Could not append phone video frame."
+            acceptingSamples = false
+          }
+        }
+        nextFrameIndex += 1
+      }
+      if !acceptingSamples { break }
+    }
+  }
+
+  private func framePixelBuffer() -> CVPixelBuffer? {
+    lock.lock()
+    let pixelBuffer = latestPixelBuffer
+    lock.unlock()
+    if let pixelBuffer {
+      return pixelBuffer
+    }
+    return blackPixelBuffer()
+  }
+
+  private func blackPixelBuffer() -> CVPixelBuffer? {
+    guard let pool = pixelBufferAdaptor?.pixelBufferPool else { return nil }
+    var pixelBuffer: CVPixelBuffer?
+    guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer) == kCVReturnSuccess,
+      let pixelBuffer
+    else {
+      return nil
+    }
+
+    CVPixelBufferLockBaseAddress(pixelBuffer, [])
+    if let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) {
+      memset(baseAddress, 0, CVPixelBufferGetDataSize(pixelBuffer))
+    }
+    CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+    return pixelBuffer
+  }
+
+  private func writerSize() -> CMVideoDimensions {
+    lock.lock()
+    let dimensions = latestDimensions
+    let pixelBuffer = latestPixelBuffer
+    lock.unlock()
+
+    if let pixelBuffer {
+      return CMVideoDimensions(
+        width: Int32(CVPixelBufferGetWidth(pixelBuffer)),
+        height: Int32(CVPixelBufferGetHeight(pixelBuffer))
+      )
+    }
+
+    if let dimensions, dimensions.width > 0, dimensions.height > 0 {
+      return dimensions
+    }
+
+    return CMVideoDimensions(width: preferredWidth, height: preferredHeight)
+  }
+
+  private func retimedAudioSample(
+    _ sampleBuffer: CMSampleBuffer,
+    sourceBase: CMTime,
+    timelineBase: CMTime
+  ) -> CMSampleBuffer? {
+    var entriesNeeded = 0
+    let countStatus = CMSampleBufferGetSampleTimingInfoArray(
+      sampleBuffer,
+      entryCount: 0,
+      arrayToFill: nil,
+      entriesNeededOut: &entriesNeeded
+    )
+    guard countStatus == noErr, entriesNeeded > 0 else { return sampleBuffer }
+
+    var timing = Array(
+      repeating: CMSampleTimingInfo(
+        duration: .invalid,
+        presentationTimeStamp: .invalid,
+        decodeTimeStamp: .invalid
+      ),
+      count: entriesNeeded
+    )
+    let timingStatus = CMSampleBufferGetSampleTimingInfoArray(
+      sampleBuffer,
+      entryCount: entriesNeeded,
+      arrayToFill: &timing,
+      entriesNeededOut: &entriesNeeded
+    )
+    guard timingStatus == noErr else { return nil }
+
+    for index in timing.indices {
+      let relativePresentation = CMTimeSubtract(timing[index].presentationTimeStamp, sourceBase)
+      timing[index].presentationTimeStamp = maxTime(.zero, CMTimeAdd(timelineBase, relativePresentation))
+      if timing[index].decodeTimeStamp.isValid {
+        let relativeDecode = CMTimeSubtract(timing[index].decodeTimeStamp, sourceBase)
+        timing[index].decodeTimeStamp = maxTime(.zero, CMTimeAdd(timelineBase, relativeDecode))
+      }
+    }
+
+    var copy: CMSampleBuffer?
+    let copyStatus = CMSampleBufferCreateCopyWithNewTiming(
+      allocator: kCFAllocatorDefault,
+      sampleBuffer: sampleBuffer,
+      sampleTimingEntryCount: timing.count,
+      sampleTimingArray: &timing,
+      sampleBufferOut: &copy
+    )
+    guard copyStatus == noErr else { return nil }
+    return copy
+  }
+
+  private func currentHostTime() -> CMTime {
+    CMClockGetTime(CMClockGetHostTimeClock())
+  }
+
+  private func elapsedTime(until hostTime: CMTime) -> CMTime {
+    maxTime(.zero, CMTimeSubtract(hostTime, recordingStartHostTime))
+  }
+
+  private func elapsedMilliseconds(until hostTime: CMTime) -> Int {
+    max(0, Int(CMTimeGetSeconds(elapsedTime(until: hostTime)) * 1000))
+  }
+
+  private func maxTime(_ left: CMTime, _ right: CMTime) -> CMTime {
+    CMTimeCompare(left, right) >= 0 ? left : right
+  }
+}
+
+private func currentHostTime() -> CMTime {
+  CMClockGetTime(CMClockGetHostTimeClock())
+}
+
+private func hostTimeNanoseconds(_ time: CMTime) -> String {
+  let seconds = CMTimeGetSeconds(time)
+  guard seconds.isFinite && seconds > 0 else { return "0" }
+  return String(UInt64(seconds * 1_000_000_000))
+}
+
 private final class NativeRecordingManager {
   static let shared = NativeRecordingManager()
 
   private var projectId: String?
-  private var tracks: [NativeRecordingTrack] = []
+  private var tracks: [NativeRecordingTrackProtocol] = []
   private var startedAt: Date?
   // When webcam and microphone are both enabled, the selected mic is recorded into webcam.mov.
   // We still return a microphone source row, but it points at the same file so the editor has one
@@ -183,7 +714,7 @@ private final class NativeRecordingManager {
       atPath: input.projectPath, withIntermediateDirectories: true)
 
     let linkedMicrophoneUniqueId = webcamLinkedMicrophoneUniqueId(input)
-    var prepared: [NativeRecordingTrack] = []
+    var prepared: [NativeRecordingTrackProtocol] = []
     for source in input.sources where source.enabled {
       guard shouldRecordSource(source, linkedMicrophoneUniqueId: linkedMicrophoneUniqueId) else { continue }
       guard let file = input.files.first(where: { $0.kind == source.kind }) else {
@@ -230,14 +761,15 @@ private final class NativeRecordingManager {
       }
     }
 
+    let hostStartTime = currentHostTime()
     let date = Date()
     startedAt = date
     for track in tracks {
-      track.start(recordingStartedAt: date)
+      track.start(recordingStartedAt: date, hostStartTime: hostStartTime)
     }
 
     return NativeStartRecordingResult(
-      startedAtHostTimeNs: String(UInt64(date.timeIntervalSince1970 * 1_000_000_000)),
+      startedAtHostTimeNs: hostTimeNanoseconds(hostStartTime),
       tracks: resultTracks()
     )
   }
@@ -322,13 +854,13 @@ private final class NativeRecordingManager {
   }
 
   private var isRecording: Bool {
-    tracks.contains(where: { $0.output.isRecording })
+    tracks.contains(where: { $0.isRecording })
   }
 
   private func stopSessions() {
     for track in tracks {
-      if track.output.isRecording {
-        track.output.stopRecording()
+      if track.isRecording {
+        track.stop()
       }
       track.cleanup()
     }
@@ -340,7 +872,7 @@ private final class NativeRecordingManager {
 
   private func makeTrack(
     source: NativeRecordingSource, file: NativeRecordingFile, audioUniqueId: String? = nil
-  ) throws -> NativeRecordingTrack {
+  ) throws -> NativeRecordingTrackProtocol {
     let fileURL = URL(fileURLWithPath: file.path)
     try FileManager.default.createDirectory(
       at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -352,6 +884,19 @@ private final class NativeRecordingManager {
       throw NSError(domain: "ReelDockRecording", code: 7, userInfo: [
         NSLocalizedDescriptionKey: "\(source.kind) source is no longer available."
       ])
+    }
+
+    if source.kind == "phone" {
+      if let previewSession = PreviewManager.shared.recordingSession(
+        id: source.kind, uniqueId: source.uniqueId)
+      {
+        return try NativePhoneTimelineRecordingTrack(
+          filePath: file.path, session: previewSession, device: device, ownsSession: false)
+      }
+
+      let session = try makeStandaloneSession(device: device, kind: source.kind)
+      return try NativePhoneTimelineRecordingTrack(
+        filePath: file.path, session: session, device: device, ownsSession: true)
     }
 
     if source.kind == "microphone" {

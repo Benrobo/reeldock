@@ -7,6 +7,7 @@ fn main() {
     let out_path = PathBuf::from(&out_dir);
     let swift_sources = [
         "swift/capture.swift",
+        "swift/export.swift",
         "swift/preview.swift",
         "swift/recording.swift",
     ];
@@ -39,6 +40,8 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=AVFoundation");
     println!("cargo:rustc-link-lib=framework=CoreMediaIO");
     println!("cargo:rustc-link-lib=framework=CoreMedia");
+    println!("cargo:rustc-link-lib=framework=CoreVideo");
+    println!("cargo:rustc-link-lib=framework=CoreGraphics");
     println!("cargo:rustc-link-lib=framework=Foundation");
     println!("cargo:rustc-link-lib=framework=AppKit");
     println!("cargo:rustc-link-lib=framework=QuartzCore");

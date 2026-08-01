@@ -138,9 +138,10 @@ final class PreviewManager {
     overlay.layer?.addSublayer(previewLayer)
 
     let surface = PreviewSurface(session: session, overlay: overlay, previewLayer: previewLayer)
-    installMovieRecorderOutput(surface)
     if id == "phone" {
       installMutedAudioMonitor(surface)
+    } else {
+      installMovieRecorderOutput(surface)
     }
 
     host.addSubview(overlay)
@@ -206,7 +207,7 @@ final class PreviewManager {
 
   func startAudioMonitor(id: String, uniqueId: String, volume: Float) -> Bool {
     // This monitors captured phone audio live through the Mac output device.
-    // It does not write media; phone audio is still recorded inside phone.mov by the file output.
+    // It does not write media; phone recording owns the phone.mov writer.
     // Keeping monitor output separate lets users hear demos without changing source files.
     guard let surface = surfaces[id] else { return false }
     guard hasDevice(surface, uniqueId: uniqueId) else { return false }
@@ -271,6 +272,11 @@ final class PreviewManager {
     }
     guard let output = surface.movieOutput else { return nil }
     return (surface.session, output)
+  }
+
+  func recordingSession(id: String, uniqueId: String) -> AVCaptureSession? {
+    guard let surface = surfaces[id], hasDevice(surface, uniqueId: uniqueId) else { return nil }
+    return surface.session
   }
 }
 

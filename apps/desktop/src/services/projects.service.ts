@@ -81,7 +81,7 @@ function pathFor(name: string, projectId: string) {
 }
 
 function exportPathFor(project: ProjectSummary, jobId: string, ratio: "16:9" | "9:16" | "1:1") {
-  return `${REELDOCK_RECORDINGS_DIR}/${slug(project.name)}-${jobId}-${ratio.replace(":", "x")}.mp4`;
+  return `${project.path}/exports/${slug(project.name)}-${jobId}-${ratio.replace(":", "x")}.mp4`;
 }
 
 function fromRow(row: ProjectRow): ProjectSummary {
@@ -251,6 +251,20 @@ export const projectsService = {
       ...job,
       status: "done",
       progress: 100,
+      completedAt: now(),
+    };
+
+    const db = await localDb();
+    await db.update(exportJobs).set(next).where(eq(exportJobs.id, next.id));
+    return next;
+  },
+
+  async failExport(job: ExportJobRecord, error: string) {
+    const next: ExportJobRecord = {
+      ...job,
+      status: "failed",
+      progress: 0,
+      error,
       completedAt: now(),
     };
 

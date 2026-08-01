@@ -13,7 +13,6 @@ import {
 } from "@reeldock/ui";
 import { RATIO_RESOLUTIONS, type CanvasRatio } from "@reeldock/shared";
 import { ColorIcon } from "@/components/color-icon";
-import { REELDOCK_RECORDINGS_DIR } from "@/constants/paths";
 import { EXPORT_QUALITY_LABEL } from "@/constants/recording";
 import { timecode } from "@/lib/format";
 import type { ExportState } from "../hooks/use-editor-export";
@@ -23,12 +22,14 @@ type EditorExportModalProps = {
   error: string | null;
   nativeExportAvailable: boolean;
   open: boolean;
+  outputPath: string | null;
   progress: number;
   readyTrackCount: number;
   ratio: Exclude<CanvasRatio, "custom">;
   state: ExportState;
   onDismiss: () => void;
   onRatioChange: (ratio: Exclude<CanvasRatio, "custom">) => void;
+  onReveal: () => void;
   onStart: () => void;
 };
 
@@ -37,12 +38,14 @@ export function EditorExportModal({
   error,
   nativeExportAvailable,
   open,
+  outputPath,
   progress,
   readyTrackCount,
   ratio,
   state,
   onDismiss,
   onRatioChange,
+  onReveal,
   onStart,
 }: EditorExportModalProps) {
   return (
@@ -65,7 +68,7 @@ export function EditorExportModal({
           <Button onClick={onDismiss}>Cancel</Button>
         ) : state === "done" ? (
           <>
-            <Button onClick={onDismiss} variant="bright">
+            <Button disabled={!outputPath} onClick={onReveal} variant="bright">
               Reveal in Finder
             </Button>
             <Button onClick={onDismiss}>Done</Button>
@@ -85,7 +88,7 @@ export function EditorExportModal({
 
       {state === "running" ? <ExportRunning progress={progress} /> : null}
 
-      {state === "done" ? <ExportDone duration={duration} ratio={ratio} /> : null}
+      {state === "done" ? <ExportDone duration={duration} outputPath={outputPath} ratio={ratio} /> : null}
 
       {state === "failed" ? <ExportFailed error={error} /> : null}
     </Modal>
@@ -144,15 +147,14 @@ function ExportIdle({
           <ValueChip>{EXPORT_QUALITY_LABEL}</ValueChip>
         </SettingsRow>
         <SettingsRow label="Frame rate">
-          <ValueChip>60 fps</ValueChip>
+          <ValueChip>30 fps</ValueChip>
         </SettingsRow>
         <SettingsRow label="Destination">
-          <ValueChip>{REELDOCK_RECORDINGS_DIR}</ValueChip>
+          <ValueChip>Project exports</ValueChip>
         </SettingsRow>
       </SettingsList>
-      <Banner className="mt-4" tone="warn">
-        Native export is not wired yet. Composition, trim, canvas, and audio metadata are saved for
-        the export phase.
+      <Banner className="mt-4" tone={readyTrackCount > 0 ? "ok" : "warn"}>
+        Export uses the saved project settings for layout, background, trims, and audio levels.
       </Banner>
     </div>
   );
@@ -182,9 +184,11 @@ function ExportRunning({ progress }: { progress: number }) {
 
 function ExportDone({
   duration,
+  outputPath,
   ratio,
 }: {
   duration: number;
+  outputPath: string | null;
   ratio: Exclude<CanvasRatio, "custom">;
 }) {
   return (
@@ -193,10 +197,10 @@ function ExportDone({
         <div>
           <div className="text-[15px] font-semibold">Export complete</div>
           <div className="font-ui-mono text-fg-2 mt-2 text-[12.5px]">
-            {`${REELDOCK_RECORDINGS_DIR}/export.mp4`}
+            {outputPath ?? "Project exports"}
           </div>
           <div className="text-fg-hint mt-1.5 text-[12.5px]">
-            {RATIO_RESOLUTIONS[ratio]} - {timecode(duration)} - 37.4 MB
+            {RATIO_RESOLUTIONS[ratio]} - {timecode(duration)}
           </div>
         </div>
       </SurfaceRow>

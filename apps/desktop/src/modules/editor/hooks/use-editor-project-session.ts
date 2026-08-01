@@ -107,6 +107,7 @@ export function useEditorProjectSession() {
     hasRecordedMicrophone,
     hasRecordedWebcam,
     isEdited,
+    markSaved,
     readyTracks,
     sourceTracks,
     storageError,

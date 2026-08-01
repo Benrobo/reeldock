@@ -1,4 +1,5 @@
 mod capture;
+mod export;
 mod local_db;
 mod preview;
 mod recording;
@@ -122,6 +123,7 @@ fn main() {
             microphone_meter,
             local_db::create_project_with_sources,
             local_db::delete_project,
+            export::export_project,
             open_privacy_settings,
             reveal_project_in_finder,
             write_project_document,
