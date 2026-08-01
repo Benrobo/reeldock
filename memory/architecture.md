@@ -52,13 +52,13 @@ demo.reeldock/
 ├── project.json
 ├── phone.mov
 ├── webcam.mov
-├── microphone.m4a
+├── microphone.mov
 ├── phone-audio.m4a
 ├── thumbnail.jpg
 └── exports/
 ```
 
-Missing media files are optional. `project.json` is versioned and validated by `packages/project-schema`.
+Missing media files are optional. When webcam and microphone recording are both enabled, the selected microphone audio is embedded in `webcam.mov` and the microphone source metadata points at that same file. A separate `microphone.mov` is only expected for microphone recording without webcam. `project.json` is versioned and validated by `packages/project-schema`.
 
 ## Milestone Order
 

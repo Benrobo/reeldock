@@ -1,5 +1,5 @@
-import { Icon } from "@benrobo/iconary/react";
 import type { IconData } from "@benrobo/iconary/core";
+import { Icon } from "@benrobo/iconary/react";
 import { cn } from "@reeldock/ui";
 
 export type ColorIconTone =
@@ -28,7 +28,7 @@ const toneClass: Record<ColorIconTone, string> = {
   camera: "text-[#fbbf24]",
   canvas: "text-[#fb7185]",
   control: "text-[#a78bfa]",
-  export: "text-[#34d399]",
+  export: "text-[#ffff]",
   menu: "text-[#c4b5fd]",
   microphone: "text-[#c084fc]",
   phone: "text-[#38bdf8]",

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { CAMERA_ROUNDNESS_DEFAULT, CAMERA_SIZE_DEFAULT } from "@reeldock/shared";
 import { canUseLocalDb } from "@/db/local";
-import type { ProjectDoc, ActiveProject } from "@/modules/project";
+import { compose, type ProjectDoc, type ActiveProject } from "@/modules/project";
 import { projectsService, type ProjectSummary } from "@/services";
 import { useUiSound } from "@/hooks/use-ui-sound";
 import {
@@ -68,10 +69,16 @@ function selectedRecordingSources(setupSources: SetupSourcesState) {
 }
 
 function recordingFiles(projectPath: string, sources: Array<{ kind: NativeRecordingKind }>) {
-  return sources.map((source) => ({
-    kind: source.kind,
-    path: recordingFilePath(projectPath, source.kind),
-  }));
+  const microphoneIsLinkedToWebcam =
+    sources.some((source) => source.kind === "webcam") &&
+    sources.some((source) => source.kind === "microphone");
+
+  return sources
+    .filter((source) => !(source.kind === "microphone" && microphoneIsLinkedToWebcam))
+    .map((source) => ({
+      kind: source.kind,
+      path: recordingFilePath(projectPath, source.kind),
+    }));
 }
 
 async function applyTrackResults(projectId: string, results: RecordingTrackResult[]) {
@@ -85,11 +92,41 @@ async function applyTrackResults(projectId: string, results: RecordingTrackResul
       return projectsService.updateSourceTrack(track.id, {
         filePath: result.filePath ?? track.filePath,
         state: result.state,
-        startOffsetMs: result.startOffsetMs,
+        startOffsetMs: 0,
         durationMs: result.durationMs,
       });
     })
   );
+}
+
+function editorOpeningDoc(
+  doc: ProjectDoc,
+  duration: number,
+  setupSources: SetupSourcesState
+): ProjectDoc {
+  const next: ProjectDoc = {
+    ...doc,
+    dur: duration,
+    segments: [{ start: 0, end: duration }],
+    phoneSize: "L",
+    phoneX: null,
+    phoneY: null,
+    camOn: setupSources.webcamEnabled,
+    camShape: "circle",
+    camScale: CAMERA_SIZE_DEFAULT,
+    camRoundness: CAMERA_ROUNDNESS_DEFAULT,
+    camX: null,
+    camY: null,
+  };
+  const placement = compose(next);
+
+  return {
+    ...next,
+    phoneX: placement.phone.x,
+    phoneY: placement.phone.y,
+    camX: placement.cam?.x ?? null,
+    camY: placement.cam?.y ?? null,
+  };
 }
 
 export function useSetupRecording({
@@ -215,11 +252,10 @@ export function useSetupRecording({
       await applyTrackResults(current.id, stopped.tracks);
       const nativeDurationSeconds = Math.ceil(stopped.durationMs / 1000);
       const duration = Math.max(1, nativeDurationSeconds || elapsedSeconds);
-      const saved = await projectsService.saveDoc(current, {
-        ...doc,
-        dur: duration,
-        segments: [{ start: 0, end: duration }],
-      });
+      const saved = await projectsService.saveDoc(
+        current,
+        editorOpeningDoc(doc, duration, setupSources)
+      );
       const recorded = await projectsService.setStatus(saved, "recorded");
       loadProject(recorded);
       setActiveProject(recorded);

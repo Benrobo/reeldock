@@ -67,7 +67,7 @@ My Recording.reeldock/
   project.json
   phone.mov
   webcam.mov
-  microphone.m4a
+  microphone.mov
   phone-audio.m4a
   thumbnail.jpg
   exports/

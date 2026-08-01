@@ -402,7 +402,7 @@ ReelDock must:
 
 ReelDock must:
 
-- Record the selected microphone independently
+- Keep the selected microphone independently controllable in editor metadata
 - Display live input level
 - Warn when no audio is detected
 - Allow the user to adjust microphone volume after recording
@@ -486,13 +486,13 @@ my-demo.reeldock/
 ├── project.json
 ├── phone.mov
 ├── webcam.mov
-├── microphone.m4a
+├── microphone.mov
 ├── phone-audio.m4a
 ├── thumbnail.jpg
 └── exports/
 ```
 
-Files that do not exist should be optional.
+Files that do not exist should be optional. When webcam and microphone recording are both enabled, `webcam.mov` may contain the selected microphone audio and the microphone source may point at that same file. This keeps the user's mouth and voice on one media clock in editor preview.
 
 Example `project.json`:
 
@@ -523,7 +523,7 @@ Example `project.json`:
       "enabled": true
     },
     "microphone": {
-      "file": "microphone.m4a",
+      "file": "microphone.mov",
       "startOffsetMs": 18,
       "volume": 1
     }

@@ -1,44 +1,36 @@
-import type { LayoutId } from "@reeldock/shared";
+export type EditorSection = "canvas" | "phone" | "camera" | "audio";
 
-export type EditorSection = "layout" | "phone" | "camera" | "canvas" | "audio";
-
-export const EDITOR_SECTIONS: { id: EditorSection; label: string; title: string; hint: string }[] =
-  [
-    {
-      id: "layout",
-      label: "Layout",
-      title: "Layout",
-      hint: "Choose how phone and camera sit together.",
-    },
-    {
-      id: "phone",
-      label: "Phone",
-      title: "Phone",
-      hint: "Tune the recorded device frame without rewriting footage.",
-    },
-    {
-      id: "camera",
-      label: "Camera",
-      title: "Camera",
-      hint: "Place the presenter track independently of the phone.",
-    },
-    {
-      id: "canvas",
-      label: "Canvas",
-      title: "Canvas",
-      hint: "Set output shape, background, padding, and spacing.",
-    },
-    {
-      id: "audio",
-      label: "Audio",
-      title: "Audio",
-      hint: "Balance microphone and phone audio before export.",
-    },
-  ];
-
-export const LAYOUT_RATIO_HINT: Partial<Record<LayoutId, "16:9" | "9:16" | "1:1">> = {
-  vertical: "9:16",
-};
+export const EDITOR_SECTIONS: {
+  id: EditorSection;
+  label: string;
+  title: string;
+  hint: string;
+}[] = [
+  {
+    id: "canvas",
+    label: "Canvas",
+    title: "Canvas",
+    hint: "Set output shape, background, padding, and spacing.",
+  },
+  {
+    id: "phone",
+    label: "Phone",
+    title: "Phone",
+    hint: "Tune the recorded device frame without rewriting footage.",
+  },
+  {
+    id: "camera",
+    label: "Camera",
+    title: "Camera",
+    hint: "Place the presenter track independently of the phone.",
+  },
+  {
+    id: "audio",
+    label: "Audio",
+    title: "Audio",
+    hint: "Balance recorded microphone audio before export.",
+  },
+];
 
 export const FILMSTRIP_COLORS = [
   "var(--color-raised-top)",

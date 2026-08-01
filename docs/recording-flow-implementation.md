@@ -37,7 +37,8 @@ The first native recording pass is implemented:
 - React creates a project on setup.
 - React prepares native recording outputs before countdown.
 - Swift records selected phone and webcam sources with `AVCaptureMovieFileOutput`.
-- Swift records the selected microphone with `AVCaptureAudioFileOutput`.
+- When webcam and microphone are both enabled, Swift records the selected microphone into `webcam.mov` so voice and webcam video share one file clock.
+- When microphone is enabled without webcam, Swift records it as `microphone.mov`.
 - Phone and webcam recording reuse the active native preview sessions when possible.
 - Stop finalizes native files and returns track paths, states, offsets, and durations.
 - React writes those results into `source_tracks`.
@@ -329,7 +330,7 @@ demo.reeldock/
 ├── project.json
 ├── phone.mov
 ├── webcam.mov
-├── microphone.m4a
+├── microphone.mov
 ├── phone-audio.m4a
 └── exports/
 ```
@@ -338,7 +339,8 @@ For the first real implementation:
 
 - `phone.mov` is required.
 - `webcam.mov` is written only when webcam recording is enabled.
-- `microphone.m4a` is written only when microphone recording is enabled.
+- `microphone.mov` is written only when microphone recording is enabled without webcam.
+- In webcam+mic recordings, the microphone source points at `webcam.mov`.
 - `phone-audio.m4a` stays disabled until native phone-audio recording is proven.
 
 The database already has `source_tracks`, so after stopping, React should update each track with:
@@ -412,7 +414,7 @@ Do not send video frames or audio samples through Tauri commands.
 4. Add the Rust command layer: `prepare_recording`, `start_recording`, `stop_recording`.
 5. Add Swift proof for one source first: record iPhone video to `phone.mov`.
 6. Add webcam recording to `webcam.mov`.
-7. Add microphone recording to `microphone.m4a`.
+7. Add microphone recording to `microphone.mov`, or embed selected microphone audio in `webcam.mov` when webcam is enabled.
 8. Save returned file paths and timing data into `source_tracks`.
 9. Navigate to editor only after `stop_recording` returns successfully or returns recoverable partial tracks.
 10. Add phone audio only after the native layer proves non-silent audio samples can be received and written separately.

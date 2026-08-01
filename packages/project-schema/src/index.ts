@@ -14,6 +14,8 @@ export const sourceTrackSchema = z.object({
   startOffsetMs: z.number().int().nonnegative(),
 });
 
+export const sourceVolumeSchema = z.number().min(0).max(2);
+
 export const reeldockProjectSchema = z.object({
   version: z.literal(1),
   name: z.string().min(1),
@@ -32,25 +34,27 @@ export const reeldockProjectSchema = z.object({
     phone: sourceTrackSchema
       .extend({
         rotation: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
+        volume: sourceVolumeSchema.default(1),
       })
       .optional(),
     webcam: sourceTrackSchema
       .extend({
         enabled: z.boolean(),
+        volume: sourceVolumeSchema.default(1),
       })
       .optional(),
     microphone: sourceTrackSchema
       .extend({
-        volume: z.number().min(0).max(2),
+        volume: sourceVolumeSchema,
       })
       .optional(),
     phoneAudio: sourceTrackSchema
       .extend({
-        volume: z.number().min(0).max(2),
+        volume: sourceVolumeSchema,
       })
       .optional(),
   }),
-  layout: z.object({
+  composition: z.object({
     phone: normalizedFrameSchema.extend({
       cornerRadius: z.number().int().nonnegative(),
       deviceFrame: z.enum(["none", "iphone"]),
@@ -84,7 +88,7 @@ export const createEmptyProject = (name: string, createdAt = new Date().toISOStr
       },
     },
     sources: {},
-    layout: {
+    composition: {
       phone: {
         x: 0.08,
         y: 0.08,

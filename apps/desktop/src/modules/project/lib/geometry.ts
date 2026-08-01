@@ -1,12 +1,33 @@
-import { LAYOUTS } from "@reeldock/shared";
+import { CAMERA_SHAPES, CAMERA_SIZE_DEFAULT, type CameraShape } from "@reeldock/shared";
 import { DEFAULT_PHONE_ASPECT } from "@/constants/preview";
 import type { ProjectDoc } from "../types";
 
 const SIZE_INDEX = { S: 0, M: 1, L: 2 } as const;
+const SETUP_CAMERA_HEIGHT_RATIO = 0.8;
+const SETUP_CAMERA_GAP_RATIO = 0.055;
+
+const CAMERA_ASPECT: Record<CameraShape, number> = Object.fromEntries(
+  CAMERA_SHAPES.map((shape) => [shape.id, shape.aspect])
+) as Record<CameraShape, number>;
+
+function cameraAspect(shape: CameraShape) {
+  return CAMERA_ASPECT[shape] ?? 16 / 9;
+}
+
+function cameraRadius(doc: ProjectDoc, width: number, height: number) {
+  return Math.round((Math.min(width, height) / 2) * (doc.camRoundness / 100));
+}
 
 export type Placement = {
   phone: { x: number; y: number; h: number };
   cam: { x: number; y: number; w: number; h: number } | null;
+};
+
+export type CameraFrame = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 };
 
 export function aspect(doc: ProjectDoc): number {
@@ -16,83 +37,71 @@ export function aspect(doc: ProjectDoc): number {
 
 export function compose(doc: ProjectDoc, phoneAspect = DEFAULT_PHONE_ASPECT): Placement {
   const a = aspect(doc);
-  const meta = LAYOUTS[doc.layout];
   const padY = doc.pad / 100;
   const padX = padY / a;
   const x0 = padX;
   const y0 = padY;
   const width = 1 - 2 * padX;
   const height = 1 - 2 * padY;
-  const gapX = meta.gap ? doc.gap / 100 / a : 0;
   const phoneIndex = SIZE_INDEX[doc.phoneSize];
-  const camIndex = SIZE_INDEX[doc.camSize];
+  const camAspect = cameraAspect(doc.camShape);
   const phoneWidthFor = (h: number) => (h * phoneAspect) / a;
-
-  if (doc.layout === "side") {
-    const phoneHeight = height * [0.72, 0.86, 1][phoneIndex];
-    const w = phoneWidthFor(phoneHeight);
-    const camW = Math.max(0.12, width - w - gapX);
-    const camH = (camW * a) / (16 / 9);
-    return {
-      phone: {
-        x: doc.swap ? x0 + width - w : x0,
-        y: y0 + (height - phoneHeight) / 2,
-        h: phoneHeight,
-      },
-      cam: doc.camOn
-        ? { x: doc.swap ? x0 : x0 + w + gapX, y: y0 + (height - camH) / 2, w: camW, h: camH }
-        : null,
-    };
-  }
-
-  if (doc.layout === "presenter") {
-    const camW = width * [0.55, 0.63, 0.71][camIndex];
-    const camH = (camW * a) / (16 / 9);
-    const columnW = Math.max(0.1, width - camW - gapX);
-    const phoneHeight = Math.min(
-      height * [0.6, 0.74, 0.88][phoneIndex],
-      (columnW * a) / phoneAspect
-    );
-    const w = phoneWidthFor(phoneHeight);
-    const camX = doc.swap ? x0 + width - camW : x0;
-    const columnX = doc.swap ? x0 : x0 + camW + gapX;
-    return {
-      phone: { x: columnX + (columnW - w) / 2, y: y0 + (height - phoneHeight) / 2, h: phoneHeight },
-      cam: doc.camOn ? { x: camX, y: y0 + (height - camH) / 2, w: camW, h: camH } : null,
-    };
-  }
-
-  const heightFactors =
-    doc.layout === "pip"
-      ? [0.8, 0.9, 1]
-      : doc.layout === "vertical"
-        ? [0.6, 0.72, 0.84]
-        : [0.72, 0.86, 1];
+  const heightFactors = [0.8, 0.9, 1] as const;
   const phoneHeight = height * heightFactors[phoneIndex];
   const w = phoneWidthFor(phoneHeight);
+
+  if (!doc.camOn) {
+    return {
+      phone: { x: x0 + (width - w) / 2, y: y0 + (height - phoneHeight) / 2, h: phoneHeight },
+      cam: null,
+    };
+  }
+
+  const camH = phoneHeight * SETUP_CAMERA_HEIGHT_RATIO;
+  const camW = (camH * camAspect) / a;
+  const gap = Math.min(width * SETUP_CAMERA_GAP_RATIO, 0.055);
+  const groupWidth = w + gap + camW;
+
+  if (groupWidth <= width) {
+    const groupX = x0 + (width - groupWidth) / 2;
+    const phone = { x: groupX, y: y0 + (height - phoneHeight) / 2, h: phoneHeight };
+    return {
+      phone,
+      cam: {
+        x: phone.x + w + gap,
+        y: y0 + (height - camH) / 2,
+        w: camW,
+        h: camH,
+      },
+    };
+  }
+
   const phone = { x: x0 + (width - w) / 2, y: y0 + (height - phoneHeight) / 2, h: phoneHeight };
-
-  if (!doc.camOn) return { phone, cam: null };
-
-  const camFactors =
-    doc.layout === "pip"
-      ? [0.13, 0.17, 0.22]
-      : doc.layout === "vertical"
-        ? [0.18, 0.24, 0.3]
-        : [0.1, 0.13, 0.17];
-  const camW = width * camFactors[camIndex];
-  const camH = (camW * a) / (doc.camShape === "circle" ? 1 : 16 / 9);
-  const insetX = padX + 0.022;
-  const insetY = padY + 0.022 * a;
-
   return {
     phone,
     cam: {
-      x: doc.camAnchor[1] === "l" ? insetX : 1 - camW - insetX,
-      y: doc.camAnchor[0] === "t" ? insetY : 1 - camH - insetY,
+      x: x0 + width - camW,
+      y: y0 + height - camH,
       w: camW,
       h: camH,
     },
+  };
+}
+
+export function cameraFrame(
+  doc: ProjectDoc,
+  phoneAspect = DEFAULT_PHONE_ASPECT
+): CameraFrame | null {
+  const { cam } = compose(doc, phoneAspect);
+  if (!cam) return null;
+
+  const camScale = doc.camScale / CAMERA_SIZE_DEFAULT;
+
+  return {
+    x: doc.camX ?? cam.x,
+    y: doc.camY ?? cam.y,
+    w: cam.w * camScale,
+    h: cam.h * camScale,
   };
 }
 
@@ -119,26 +128,28 @@ export function stageGeometry(
   const a = aspect(doc);
   const ch = Math.floor(Math.min(stage.h, stage.w / a));
   const cw = Math.round(ch * a);
-  const { phone, cam } = compose(doc, phoneAspect);
+  const { phone } = compose(doc, phoneAspect);
   const phoneHeight = phone.h * ch;
-  const isBubble = LAYOUTS[doc.layout].cam === "bubble";
+  const phoneWidth = phoneHeight * phoneAspect;
+  const phoneX = doc.phoneX ?? phone.x;
+  const phoneY = doc.phoneY ?? phone.y;
+  const camera = cameraFrame(doc, phoneAspect);
+  const camWidth = camera ? Math.round(camera.w * cw) : 0;
+  const camHeight = camera ? Math.round(camera.h * ch) : 0;
+  const camRadius = camera ? cameraRadius(doc, camWidth, camHeight) : 0;
 
   return {
     cw,
     ch,
-    phoneLeft: Math.round(phone.x * cw),
-    phoneTop: Math.round(phone.y * ch),
-    phoneWidth: Math.round(phoneHeight * phoneAspect),
+    phoneLeft: Math.round(phoneX * cw),
+    phoneTop: Math.round(phoneY * ch),
+    phoneWidth: Math.round(phoneWidth),
     phoneHeight: Math.round(phoneHeight),
-    hasCam: Boolean(cam),
-    camLeft: cam ? Math.round(cam.x * cw) : 0,
-    camTop: cam ? Math.round(cam.y * ch) : 0,
-    camWidth: cam ? Math.round(cam.w * cw) : 0,
-    camHeight: cam ? Math.round(cam.h * ch) : 0,
-    camRadius: cam
-      ? doc.camShape === "circle" && isBubble
-        ? Math.round((cam.w * cw) / 2)
-        : Math.round(cam.w * cw * 0.08)
-      : 0,
+    hasCam: Boolean(camera),
+    camLeft: camera ? Math.round(camera.x * cw) : 0,
+    camTop: camera ? Math.round(camera.y * ch) : 0,
+    camWidth,
+    camHeight,
+    camRadius,
   };
 }
