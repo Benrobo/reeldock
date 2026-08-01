@@ -11,6 +11,9 @@ private final class PreviewSurface {
   let previewLayer: AVCaptureVideoPreviewLayer
   var audioPreviewOutput: AVCaptureAudioPreviewOutput?
   var movieOutput: AVCaptureMovieFileOutput?
+  // Webcam recording can temporarily add the selected microphone as an audio input.
+  // Keeping the exact input lets us replace it cleanly if the user changes microphones.
+  var recordingAudioInput: AVCaptureDeviceInput?
 
   init(session: AVCaptureSession, overlay: NSView, previewLayer: AVCaptureVideoPreviewLayer) {
     self.session = session
@@ -228,13 +231,44 @@ final class PreviewManager {
     output.volume = 0
   }
 
-  func recordingMovieOutput(id: String, uniqueId: String) -> (
+  private func installRecordingAudioInput(_ surface: PreviewSurface, uniqueId: String) -> Bool {
+    // This does not monitor audio to speakers. It only routes the selected mic into webcam.mov
+    // so webcam mouth movement and recorded voice share one native file clock.
+    if surface.recordingAudioInput?.device.uniqueID == uniqueId {
+      return true
+    }
+
+    guard let device = AVCaptureDevice(uniqueID: uniqueId),
+      let input = try? AVCaptureDeviceInput(device: device)
+    else {
+      return false
+    }
+
+    surface.session.beginConfiguration()
+    if let existing = surface.recordingAudioInput {
+      surface.session.removeInput(existing)
+      surface.recordingAudioInput = nil
+    }
+    guard surface.session.canAddInput(input) else {
+      surface.session.commitConfiguration()
+      return false
+    }
+    surface.session.addInput(input)
+    surface.recordingAudioInput = input
+    surface.session.commitConfiguration()
+    return true
+  }
+
+  func recordingMovieOutput(id: String, uniqueId: String, audioUniqueId: String? = nil) -> (
     session: AVCaptureSession, output: AVCaptureMovieFileOutput
   )? {
     // Recording should reuse the preview's already-attached movie output.
     // That keeps the native session topology stable when the user presses Record.
     // If this returns nil, recording falls back to a standalone capture session.
     guard let surface = surfaces[id], hasDevice(surface, uniqueId: uniqueId) else { return nil }
+    if let audioUniqueId, !installRecordingAudioInput(surface, uniqueId: audioUniqueId) {
+      return nil
+    }
     guard let output = surface.movieOutput else { return nil }
     return (surface.session, output)
   }

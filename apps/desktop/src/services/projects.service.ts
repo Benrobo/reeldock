@@ -14,6 +14,8 @@ import { DEFAULT_PROJECT_NAME } from "@/constants/recording";
 import { DEFAULT_DOC, projectDocSchema, type ProjectDoc } from "@/modules/project";
 import { projectFilesService } from "./project-files.service";
 
+const LEGACY_LAYOUT_ID = "freeform";
+
 export type ProjectStatus = "draft" | "recording" | "recorded" | "exported" | "failed";
 
 export type ProjectSummary = {
@@ -22,7 +24,6 @@ export type ProjectSummary = {
   path: string;
   durationSeconds: number;
   canvasRatio: string;
-  layoutId: string;
   status: ProjectStatus;
   doc: ProjectDoc;
   createdAt: string;
@@ -90,7 +91,6 @@ function fromRow(row: ProjectRow): ProjectSummary {
     path: row.path,
     durationSeconds: row.durationSeconds,
     canvasRatio: row.canvasRatio,
-    layoutId: row.layoutId,
     status: row.status as ProjectStatus,
     doc: projectDocSchema.parse(JSON.parse(row.docJson)),
     createdAt: row.createdAt,
@@ -106,7 +106,7 @@ function toRow(project: ProjectSummary) {
     path: project.path,
     durationSeconds: project.durationSeconds,
     canvasRatio: project.canvasRatio,
-    layoutId: project.layoutId,
+    layoutId: LEGACY_LAYOUT_ID,
     status: project.status,
     docJson: JSON.stringify(project.doc),
     createdAt: project.createdAt,
@@ -141,7 +141,6 @@ export const projectsService = {
       path: pathFor(name, projectId),
       durationSeconds: DEFAULT_DOC.dur,
       canvasRatio: DEFAULT_DOC.ratio,
-      layoutId: DEFAULT_DOC.layout,
       status: "draft",
       doc: DEFAULT_DOC,
       createdAt: timestamp,
@@ -219,7 +218,6 @@ export const projectsService = {
       ...project,
       durationSeconds: doc.dur,
       canvasRatio: doc.ratio,
-      layoutId: doc.layout,
       doc,
     });
   },

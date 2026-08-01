@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@reeldock/ui";
 
 type CameraBubbleProps = {
@@ -8,6 +9,7 @@ type CameraBubbleProps = {
   shadow?: boolean;
   label?: string;
   className?: string;
+  children?: ReactNode;
 };
 
 export function CameraBubble({
@@ -18,6 +20,7 @@ export function CameraBubble({
   shadow = false,
   label = "Camera",
   className,
+  children,
 }: CameraBubbleProps) {
   return (
     <div
@@ -30,11 +33,12 @@ export function CameraBubble({
       )}
       style={{ borderRadius: radius, backgroundPosition: `${crop}% 50%` }}
     >
-      {live ? null : (
-        <span className="font-ui-mono text-placeholder-fg text-[9.5px] uppercase tracking-[0.12em]">
-          {label}
-        </span>
-      )}
+      {children ??
+        (live ? null : (
+          <span className="font-ui-mono text-placeholder-fg text-[9.5px] uppercase tracking-[0.12em]">
+            {label}
+          </span>
+        ))}
     </div>
   );
 }

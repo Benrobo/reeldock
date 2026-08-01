@@ -55,7 +55,7 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
   let kind: String
   let filePath: String
   let session: AVCaptureSession
-  let output: AVCaptureFileOutput
+  let output: AVCaptureMovieFileOutput
   let ownsSession: Bool
   let removesOutputOnCleanup: Bool
   private let finishedSemaphore = DispatchSemaphore(value: 0)
@@ -63,9 +63,10 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
   private var lastError: String?
   private var startOffsetMs = 0
   private var durationMs = 0
+  private var requestedStartAt: Date?
 
   init(
-    kind: String, filePath: String, session: AVCaptureSession, output: AVCaptureFileOutput,
+    kind: String, filePath: String, session: AVCaptureSession, output: AVCaptureMovieFileOutput,
     ownsSession: Bool, removesOutputOnCleanup: Bool
   ) {
     self.kind = kind
@@ -78,17 +79,9 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
 
   func start(recordingStartedAt: Date) {
     lastState = "recording"
-    startOffsetMs = max(0, Int(Date().timeIntervalSince(recordingStartedAt) * 1000))
+    requestedStartAt = recordingStartedAt
     let url = URL(fileURLWithPath: filePath)
-
-    if let audioOutput = output as? AVCaptureAudioFileOutput {
-      audioOutput.startRecording(to: url, outputFileType: .m4a, recordingDelegate: self)
-      return
-    }
-
-    if let movieOutput = output as? AVCaptureMovieFileOutput {
-      movieOutput.startRecording(to: url, recordingDelegate: self)
-    }
+    output.startRecording(to: url, recordingDelegate: self)
   }
 
   func stop() {
@@ -123,8 +116,18 @@ private final class NativeRecordingTrack: NSObject, AVCaptureFileOutputRecording
   }
 
   func normalizeDuration(to sessionDurationMs: Int) {
-    if lastState == "recorded" {
+    if lastState == "recorded" && durationMs <= 0 {
       durationMs = max(1, sessionDurationMs - startOffsetMs)
+    }
+  }
+
+  func fileOutput(
+    _ output: AVCaptureFileOutput,
+    didStartRecordingTo outputFileURL: URL,
+    from connections: [AVCaptureConnection]
+  ) {
+    if let requestedStartAt {
+      startOffsetMs = max(0, Int(Date().timeIntervalSince(requestedStartAt) * 1000))
     }
   }
 
@@ -163,6 +166,10 @@ private final class NativeRecordingManager {
   private var projectId: String?
   private var tracks: [NativeRecordingTrack] = []
   private var startedAt: Date?
+  // When webcam and microphone are both enabled, the selected mic is recorded into webcam.mov.
+  // We still return a microphone source row, but it points at the same file so the editor has one
+  // media clock for mouth movement and voice.
+  private var microphoneMetadataMirrorsWebcam = false
 
   func prepare(_ input: NativePrepareRecordingInput) throws -> NativeOkResult {
     if isRecording {
@@ -175,15 +182,17 @@ private final class NativeRecordingManager {
     try FileManager.default.createDirectory(
       atPath: input.projectPath, withIntermediateDirectories: true)
 
+    let linkedMicrophoneUniqueId = webcamLinkedMicrophoneUniqueId(input)
     var prepared: [NativeRecordingTrack] = []
     for source in input.sources where source.enabled {
-      guard source.kind != "phone-audio" else { continue }
+      guard shouldRecordSource(source, linkedMicrophoneUniqueId: linkedMicrophoneUniqueId) else { continue }
       guard let file = input.files.first(where: { $0.kind == source.kind }) else {
         throw NSError(domain: "ReelDockRecording", code: 2, userInfo: [
           NSLocalizedDescriptionKey: "Missing output file for \(source.kind)."
         ])
       }
-      prepared.append(try makeTrack(source: source, file: file))
+      let audioUniqueId = linkedAudioUniqueId(for: source, linkedMicrophoneUniqueId: linkedMicrophoneUniqueId)
+      prepared.append(try makeTrack(source: source, file: file, audioUniqueId: audioUniqueId))
     }
 
     guard prepared.contains(where: { $0.kind == "phone" }) else {
@@ -194,11 +203,12 @@ private final class NativeRecordingManager {
 
     projectId = input.projectId
     tracks = prepared
+    microphoneMetadataMirrorsWebcam = linkedMicrophoneUniqueId != nil
 
     return NativeOkResult(
       ok: true,
       projectId: input.projectId,
-      tracks: tracks.map { $0.result() }
+      tracks: resultTracks()
     )
   }
 
@@ -228,7 +238,7 @@ private final class NativeRecordingManager {
 
     return NativeStartRecordingResult(
       startedAtHostTimeNs: String(UInt64(date.timeIntervalSince1970 * 1_000_000_000)),
-      tracks: tracks.map { $0.result() }
+      tracks: resultTracks()
     )
   }
 
@@ -254,10 +264,61 @@ private final class NativeRecordingManager {
     for track in tracks {
       track.normalizeDuration(to: duration)
     }
-    let resultTracks = tracks.map { $0.result() }
+    let resultTracks = resultTracks()
     stopSessions()
 
     return NativeStopRecordingResult(durationMs: duration, tracks: resultTracks)
+  }
+
+  private func resultTracks() -> [NativeTrackResult] {
+    var results = tracks.map { $0.result() }
+    // The database still needs a microphone source because the editor has microphone controls.
+    // For webcam+mic sessions that source is metadata only; webcam.mov carries the actual audio.
+    guard microphoneMetadataMirrorsWebcam,
+      !results.contains(where: { $0.kind == "microphone" }),
+      let webcam = results.first(where: { $0.kind == "webcam" })
+    else { return results }
+
+    results.append(
+      NativeTrackResult(
+        kind: "microphone",
+        state: webcam.state,
+        filePath: webcam.filePath,
+        startOffsetMs: webcam.startOffsetMs,
+        durationMs: webcam.durationMs,
+        error: webcam.error
+      )
+    )
+    return results
+  }
+
+  private func webcamLinkedMicrophoneUniqueId(_ input: NativePrepareRecordingInput) -> String? {
+    // This is the deliberate lip-sync path: webcam video and selected mic audio are written by
+    // the same AVCaptureMovieFileOutput instead of trying to sync separate files later.
+    guard input.sources.contains(where: { $0.enabled && $0.kind == "webcam" }) else {
+      return nil
+    }
+    return input.sources.first { $0.enabled && $0.kind == "microphone" }?.uniqueId
+  }
+
+  private func shouldRecordSource(
+    _ source: NativeRecordingSource,
+    linkedMicrophoneUniqueId: String?
+  ) -> Bool {
+    if source.kind == "phone-audio" {
+      return false
+    }
+    if source.kind == "microphone" && linkedMicrophoneUniqueId != nil {
+      return false
+    }
+    return true
+  }
+
+  private func linkedAudioUniqueId(
+    for source: NativeRecordingSource,
+    linkedMicrophoneUniqueId: String?
+  ) -> String? {
+    source.kind == "webcam" ? linkedMicrophoneUniqueId : nil
   }
 
   private var isRecording: Bool {
@@ -274,10 +335,11 @@ private final class NativeRecordingManager {
     tracks = []
     projectId = nil
     startedAt = nil
+    microphoneMetadataMirrorsWebcam = false
   }
 
   private func makeTrack(
-    source: NativeRecordingSource, file: NativeRecordingFile
+    source: NativeRecordingSource, file: NativeRecordingFile, audioUniqueId: String? = nil
   ) throws -> NativeRecordingTrack {
     let fileURL = URL(fileURLWithPath: file.path)
     try FileManager.default.createDirectory(
@@ -308,7 +370,7 @@ private final class NativeRecordingManager {
     }
 
     if let previewOutput = PreviewManager.shared.recordingMovieOutput(
-      id: source.kind, uniqueId: source.uniqueId)
+      id: source.kind, uniqueId: source.uniqueId, audioUniqueId: audioUniqueId)
     {
       return NativeRecordingTrack(
         kind: source.kind, filePath: file.path, session: previewOutput.session,
@@ -316,6 +378,9 @@ private final class NativeRecordingManager {
     }
 
     let session = try makeStandaloneSession(device: device, kind: source.kind)
+    if let audioUniqueId {
+      try addAudioInput(uniqueId: audioUniqueId, to: session)
+    }
     let output = AVCaptureMovieFileOutput()
     output.movieFragmentInterval = CMTime(seconds: 2, preferredTimescale: 600)
     session.beginConfiguration()
@@ -330,6 +395,21 @@ private final class NativeRecordingManager {
     return NativeRecordingTrack(
       kind: source.kind, filePath: file.path, session: session, output: output,
       ownsSession: true, removesOutputOnCleanup: true)
+  }
+
+  private func addAudioInput(uniqueId: String, to session: AVCaptureSession) throws {
+    guard let device = AVCaptureDevice(uniqueID: uniqueId) else {
+      throw NSError(domain: "ReelDockRecording", code: 11, userInfo: [
+        NSLocalizedDescriptionKey: "Selected microphone is no longer available."
+      ])
+    }
+    let input = try AVCaptureDeviceInput(device: device)
+    guard session.canAddInput(input) else {
+      throw NSError(domain: "ReelDockRecording", code: 12, userInfo: [
+        NSLocalizedDescriptionKey: "Could not attach microphone to webcam recording."
+      ])
+    }
+    session.addInput(input)
   }
 
   private func makeStandaloneSession(device: AVCaptureDevice, kind: String) throws -> AVCaptureSession {

@@ -28,7 +28,7 @@ Examples:
 
 In Swift/AVFoundation, this usually appears as an `AVCaptureDevice` that has the media type `.audio`.
 
-For ReelDock, a normal microphone should become the `microphone.m4a` track.
+For ReelDock, a normal microphone should become `microphone.mov` when recorded alone. When webcam recording is also enabled, the selected microphone audio should be embedded in `webcam.mov` so webcam mouth movement and voice use the same file clock.
 
 ## What A Video Device Is
 
@@ -127,7 +127,7 @@ For ReelDock, the finished product needs several pipelines running together:
 ```text
 iPhone screen        -> phone.mov
 Webcam               -> webcam.mov
-Microphone           -> microphone.m4a
+Microphone           -> microphone.mov, or embedded in webcam.mov when webcam is enabled
 iPhone audio stream  -> phone-audio.m4a, when supported
 ```
 

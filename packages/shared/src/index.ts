@@ -21,39 +21,15 @@ export const ASPECT_RATIOS = [
   },
 ] as const;
 
-export const LAYOUT_PRESETS = [
-  {
-    id: "phone-focus",
-    label: "Phone focus",
-    description: "Centered phone with space for a polished background.",
-  },
-  {
-    id: "side-by-side",
-    label: "Side by side",
-    description: "Phone and camera balanced for founder walkthroughs.",
-  },
-  {
-    id: "picture-in-picture",
-    label: "Picture in picture",
-    description: "Large phone with a compact webcam overlay.",
-  },
-  {
-    id: "vertical-demo",
-    label: "Vertical demo",
-    description: "Portrait-first framing for social clips.",
-  },
-] as const;
-
 export const MVP_PHASES = [
   "Native capture proof",
   "Recording MVP",
-  "Layout editor",
+  "Composition editor",
   "Local export",
   "Elorah validation",
 ] as const;
 
 export type AspectRatioId = (typeof ASPECT_RATIOS)[number]["id"];
-export type LayoutPresetId = (typeof LAYOUT_PRESETS)[number]["id"];
 export type MvpPhase = (typeof MVP_PHASES)[number];
 
 export type CaptureSourceKind = "phone" | "webcam" | "microphone";
@@ -86,55 +62,33 @@ export const RATIO_RESOLUTIONS: Record<string, string> = {
   "1:1": "1080 × 1080",
 };
 
-export const LAYOUTS = {
-  focus: { label: "Phone focus", cam: "bubble", anchors: true, swap: false, gap: false },
-  side: { label: "Side by side", cam: "pane", anchors: false, swap: true, gap: true },
-  pip: { label: "Picture in picture", cam: "bubble", anchors: true, swap: false, gap: false },
-  presenter: { label: "Presenter focus", cam: "pane", anchors: false, swap: true, gap: true },
-  vertical: { label: "Vertical demo", cam: "bubble", anchors: true, swap: false, gap: false },
-} as const;
-
-export type LayoutId = keyof typeof LAYOUTS;
-export const LAYOUT_IDS = Object.keys(LAYOUTS) as LayoutId[];
-
-export const LAYOUT_THUMBS: Record<
-  LayoutId,
-  {
-    px: number;
-    py: number;
-    pw: number;
-    ph: number;
-    cx: number;
-    cy: number;
-    cw: number;
-    ch: number;
-    cr: number;
-  }
-> = {
-  focus: { px: 39, py: 8, pw: 22, ph: 84, cx: 78, cy: 62, cw: 15, ch: 26, cr: 9 },
-  side: { px: 7, py: 12, pw: 19, ph: 76, cx: 32, cy: 22, cw: 60, ch: 56, cr: 3 },
-  pip: { px: 38, py: 5, pw: 23, ph: 90, cx: 70, cy: 60, cw: 20, ch: 34, cr: 11 },
-  presenter: { px: 74, py: 20, pw: 16, ph: 60, cx: 7, cy: 16, cw: 60, ch: 68, cr: 3 },
-  vertical: { px: 41, py: 15, pw: 18, ph: 70, cx: 62, cy: 9, cw: 16, ch: 28, cr: 9 },
-};
+export const CANVAS_PADDING_MIN = 0;
+export const CANVAS_PADDING_MAX = 28;
 
 export const ELEMENT_SIZES = ["S", "M", "L"] as const;
 export type ElementSize = (typeof ELEMENT_SIZES)[number];
 export const SIZE_LABELS: Record<ElementSize, string> = { S: "Small", M: "Medium", L: "Large" };
+export const PHONE_ZOOM_MIN = 75;
+export const PHONE_ZOOM_MAX = 130;
+export const PHONE_ZOOM_DEFAULT = 100;
 
-export const CAMERA_ANCHORS = [
-  { id: "tl", label: "Top left", dx: 6, dy: 8 },
-  { id: "tr", label: "Top right", dx: 68, dy: 8 },
-  { id: "bl", label: "Bottom left", dx: 6, dy: 52 },
-  { id: "br", label: "Bottom right", dx: 68, dy: 52 },
-] as const;
-export type CameraAnchor = (typeof CAMERA_ANCHORS)[number]["id"];
+export const CAMERA_SHAPE_IDS = ["square", "horizontal", "vertical", "original", "circle"] as const;
+export type CameraShape = (typeof CAMERA_SHAPE_IDS)[number];
 
 export const CAMERA_SHAPES = [
-  { id: "circle", label: "Circle" },
-  { id: "rect", label: "Rounded" },
-] as const;
-export type CameraShape = (typeof CAMERA_SHAPES)[number]["id"];
+  { id: "square", label: "Square", aspect: 1 },
+  { id: "horizontal", label: "Horizontal", aspect: 16 / 9 },
+  { id: "vertical", label: "Vertical", aspect: 9 / 16 },
+  { id: "original", label: "Original", aspect: 16 / 9 },
+  { id: "circle", label: "Circle", aspect: 1 },
+] as const satisfies readonly { id: CameraShape; label: string; aspect: number }[];
+
+export const CAMERA_SIZE_MIN = 40;
+export const CAMERA_SIZE_MAX = 100;
+export const CAMERA_SIZE_DEFAULT = 70;
+export const CAMERA_ROUNDNESS_MIN = 0;
+export const CAMERA_ROUNDNESS_MAX = 100;
+export const CAMERA_ROUNDNESS_DEFAULT = 100;
 
 export const BACKGROUND_KINDS = [
   { id: "solid", label: "Solid" },

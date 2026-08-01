@@ -17,8 +17,8 @@
     "tauri:build": "turbo run tauri:build --filter=@reeldock/desktop",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
     "clean": "turbo run clean",
     "skills:install": "bash scripts/install-skills.sh",
     "dev:ui-preview": "turbo run dev --filter=@reeldock/ui-preview"

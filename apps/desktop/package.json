@@ -27,10 +27,13 @@
     "@tanstack/react-router": "^1.91.0",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-sql": "^2.4.0",
+    "@tippyjs/react": "^4.2.6",
     "drizzle-orm": "^0.45.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-draggable": "^4.7.1",
     "tauri-plugin-macos-permissions-api": "^2.3.0",
+    "tippy.js": "^6.3.7",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },

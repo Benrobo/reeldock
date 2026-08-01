@@ -339,6 +339,25 @@
   transition-duration: 0.09s;
 }
 
+.tippy-box[data-theme~="reeldock"] {
+  border-radius: 9px;
+  background: var(--color-popover-bottom);
+  color: var(--color-fg-menu);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.tippy-box[data-theme~="reeldock"] > .tippy-content {
+  padding: 7px 9px;
+}
+
+.tippy-box[data-theme~="reeldock"] > .tippy-arrow {
+  color: var(--color-popover-bottom);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rd-press,
   .rd-press:not(:disabled):active {

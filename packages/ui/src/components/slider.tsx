@@ -12,6 +12,8 @@ type SliderProps = {
   label: string;
   value?: number;
   defaultValue?: number;
+  min?: number;
+  max?: number;
   onChange?: (value: number) => void;
   tone?: FillTone;
   className?: string;
@@ -21,12 +23,16 @@ export function Slider({
   label,
   value,
   defaultValue = 50,
+  min = 0,
+  max = 100,
   onChange,
   tone = "ok",
   className,
 }: SliderProps) {
   const [internal, setInternal] = useState(defaultValue);
   const current = value ?? internal;
+  const range = max - min;
+  const ratio = range > 0 ? Math.max(0, Math.min(1, (current - min) / range)) : 0;
   const trackRef = useRef<HTMLDivElement>(null);
   const rectRef = useRef<DOMRect | null>(null);
 
@@ -35,11 +41,11 @@ export function Slider({
       const rect = rectRef.current;
       if (!rect) return;
       const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      const next = Math.round(ratio * 100);
+      const next = Math.round(min + ratio * range);
       setInternal(next);
       onChange?.(next);
     },
-    [onChange]
+    [max, min, onChange, range]
   );
 
   const dragging = useRef(false);
@@ -85,11 +91,11 @@ export function Slider({
               "bg-linear-to-b absolute inset-y-0 left-0 rounded-[3px]",
               fillClass[tone]
             )}
-            style={{ width: `${current}%` }}
+            style={{ width: `${ratio * 100}%` }}
           />
           <div
             className="border-knob-line bg-linear-to-b from-knob-top to-knob-sm-bottom shadow-knob-sm absolute top-1/2 -ml-2 -mt-2 size-4 rounded-full border"
-            style={{ left: `${current}%` }}
+            style={{ left: `${ratio * 100}%` }}
           />
         </div>
       </div>

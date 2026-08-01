@@ -1,4 +1,5 @@
 import { RouterProvider, createHashHistory, createRouter } from "@tanstack/react-router";
+import { tippy } from "@tippyjs/react";
 import { routeTree } from "./routeTree.gen";
 
 function normalizeDirectPathForHashHistory() {
@@ -11,6 +12,14 @@ function normalizeDirectPathForHashHistory() {
 }
 
 normalizeDirectPathForHashHistory();
+
+tippy.setDefaultProps({
+  animation: "fade",
+  delay: [180, 0],
+  duration: [140, 100],
+  offset: [0, 9],
+  theme: "reeldock",
+});
 
 const router = createRouter({
   routeTree,

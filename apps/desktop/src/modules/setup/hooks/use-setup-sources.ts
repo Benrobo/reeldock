@@ -23,7 +23,9 @@ function selectedSourceForKind(
 ) {
   const available = availableSourcesOfKind(sources, kind);
   const defaultSource =
-    kind === "microphone" ? (available.find((source) => source.isDefault) ?? available[0]) : available[0];
+    kind === "microphone"
+      ? (available.find((source) => source.isDefault) ?? available[0])
+      : available[0];
   return available.find((source) => source.id === selectedId) ?? defaultSource;
 }
 
@@ -31,7 +33,7 @@ export function useSetupSources(sources: CaptureSource[]) {
   const [selectedSourceIds, setSelectedSourceIds] = useState<SelectedSourceIds>({});
   const [webcamRecordingEnabled, setWebcamRecordingEnabled] = useState(true);
   const [microphoneRecordingEnabled, setMicrophoneRecordingEnabled] = useState(true);
-  const [phoneAudioMonitoringEnabled, setPhoneAudioMonitoringEnabled] = useState(true);
+  const [phoneAudioMonitoringEnabled, setPhoneAudioMonitoringEnabled] = useState(false);
   const phoneSources = sources.filter((source) => source.kind === "phone");
   const webcamSources = sources.filter((source) => source.kind === "webcam");
   const microphoneSources = sources.filter((source) => source.kind === "microphone");
