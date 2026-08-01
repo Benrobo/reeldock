@@ -1,17 +1,10 @@
-import { ELEMENT_SIZES, PHONE_ZOOM_MAX, PHONE_ZOOM_MIN, type ElementSize } from "@reeldock/shared";
+import { PHONE_ZOOM_MAX, PHONE_ZOOM_MIN } from "@reeldock/shared";
 import { Slider, SwitchRow } from "@reeldock/ui";
-import { FieldSegmented } from "../field-segmented";
 import type { EditorSidebarSectionProps } from "./types";
 
 export function PhoneSection({ doc, onUpdate }: EditorSidebarSectionProps) {
   return (
     <div className="grid gap-4">
-      <FieldSegmented<ElementSize>
-        label="Size"
-        onChange={(phoneSize) => onUpdate({ phoneSize })}
-        options={ELEMENT_SIZES}
-        value={doc.phoneSize}
-      />
       <SwitchRow
         checked={doc.frame}
         label="Device frame"

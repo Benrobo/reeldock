@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import type { CaptureSourceKind } from "@reeldock/shared";
+import type { CanvasRatio, CaptureSourceKind } from "@reeldock/shared";
 import {
   createProjectWithSourcesTransaction,
   deleteProjectTransaction,
@@ -39,7 +39,7 @@ export type CreateProjectInput = {
 export type ExportJobRecord = {
   id: string;
   projectId: string;
-  ratio: "16:9" | "9:16" | "1:1";
+  ratio: CanvasRatio;
   filePath: string;
   status: "queued" | "running" | "done" | "failed";
   progress: number;
@@ -80,8 +80,8 @@ function pathFor(name: string, projectId: string) {
   return `${REELDOCK_RECORDINGS_DIR}/${slug(name)}-${projectId}.reeldock`;
 }
 
-function exportPathFor(project: ProjectSummary, jobId: string, ratio: "16:9" | "9:16" | "1:1") {
-  return `${REELDOCK_RECORDINGS_DIR}/${slug(project.name)}-${jobId}-${ratio.replace(":", "x")}.mp4`;
+function exportPathFor(project: ProjectSummary, jobId: string, ratio: CanvasRatio) {
+  return `${project.path}/exports/${slug(project.name)}-${jobId}-${ratio.replace(":", "x")}.mp4`;
 }
 
 function fromRow(row: ProjectRow): ProjectSummary {
@@ -226,7 +226,7 @@ export const projectsService = {
     return this.save({ ...project, status });
   },
 
-  async createExport(project: ProjectSummary, ratio: "16:9" | "9:16" | "1:1") {
+  async createExport(project: ProjectSummary, ratio: CanvasRatio) {
     const timestamp = now();
     const jobId = id("export");
     const job: ExportJobRecord = {
@@ -251,6 +251,20 @@ export const projectsService = {
       ...job,
       status: "done",
       progress: 100,
+      completedAt: now(),
+    };
+
+    const db = await localDb();
+    await db.update(exportJobs).set(next).where(eq(exportJobs.id, next.id));
+    return next;
+  },
+
+  async failExport(job: ExportJobRecord, error: string) {
+    const next: ExportJobRecord = {
+      ...job,
+      status: "failed",
+      progress: 0,
+      error,
       completedAt: now(),
     };
 

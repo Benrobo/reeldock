@@ -1,5 +1,14 @@
 export { useProject, type ActiveProject } from "./store";
-export { DEFAULT_DOC, projectDocSchema, type ProjectDoc, type Segment } from "./types";
+export {
+  DEFAULT_DOC,
+  DEFAULT_SOURCE_ORDER,
+  SOURCE_LAYERS,
+  normalizeSourceOrder,
+  projectDocSchema,
+  type ProjectDoc,
+  type Segment,
+  type SourceLayer,
+} from "./types";
 export {
   aspect,
   cameraFrame,
@@ -9,7 +18,16 @@ export {
   type Placement,
   type StageGeometry,
 } from "./lib/geometry";
-export { GRADIENTS, IMAGE_PLACEHOLDER, PATTERNS, backgroundCss } from "./lib/background";
+export {
+  BUILTIN_BACKGROUND_PREFIX,
+  BUILT_IN_BACKGROUND_GROUPS,
+  GRADIENTS,
+  IMAGE_PLACEHOLDER,
+  PATTERNS,
+  backgroundCss,
+  backgroundImageUrl,
+  builtInBackgroundValue,
+} from "./lib/background";
 export {
   cutRegions,
   editedTime,

@@ -1,12 +1,27 @@
-import { useEffect, useMemo, useRef, type CSSProperties } from "react";
-import Draggable, { type DraggableData, type DraggableEvent } from "react-draggable";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import {
+  CAMERA_SCALE_REFERENCE,
+  CAMERA_SIZE_MAX,
+  CAMERA_SIZE_MIN,
+  PHONE_SCALE_DEFAULT,
+  PHONE_SCALE_MAX,
+  PHONE_SCALE_MIN,
+} from "@reeldock/shared";
 import { cn } from "@reeldock/ui";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import Draggable, { type DraggableData, type DraggableEvent } from "react-draggable";
 import { DEFAULT_PHONE_ASPECT } from "@/constants/preview";
-import { backgroundCss, stageGeometry, useProject } from "@/modules/project";
+import {
+  backgroundCss,
+  compose,
+  normalizeSourceOrder,
+  stageGeometry,
+  useProject,
+  type SourceLayer,
+} from "@/modules/project";
+import { useNativePreview } from "../hooks/use-native-preview";
 import { CameraBubble } from "./camera-bubble";
 import { DeviceFrame, deviceFrameMetrics } from "./device-frame";
-import { useNativePreview } from "../hooks/use-native-preview";
 
 type CanvasStageProps = {
   size: { w: number; h: number };
@@ -45,8 +60,33 @@ type ActiveMediaSlot = MediaSlot & {
 };
 
 type MediaSlotKey = "microphone" | "phone" | "webcam";
+type CanvasElement = "phone" | "camera";
+type CanvasPoint = { x: number; y: number };
+
+type ResizeFrame = CanvasPoint & {
+  baseWidth: number;
+  baseHeight: number;
+  width: number;
+  height: number;
+  radius: number;
+  minScale: number;
+  maxScale: number;
+  scaleBase: number;
+};
+
+type ResizeSession = {
+  element: CanvasElement;
+  anchorX: number;
+  anchorY: number;
+  startScaleX: number;
+  startScaleY: number;
+  frame: ResizeFrame;
+  pointerId: number;
+};
 
 const PLAYHEAD_PUBLISH_INTERVAL_MS = 100;
+const RESIZE_HANDLE_SIZE = 18;
+const LAST_VISIBLE_FRAME_OFFSET = 1 / 30;
 
 export function CanvasStage({
   size,
@@ -74,8 +114,19 @@ export function CanvasStage({
   const playbackEndedRef = useRef(onPlaybackEnded);
   const playbackTimeChangeRef = useRef(onPlaybackTimeChange);
   const lastTickRef = useRef<number | null>(null);
-  const { activeProject, doc, update } = useProject();
+  const resizeSessionRef = useRef<ResizeSession | null>(null);
+  const [selectedElement, setSelectedElement] = useState<CanvasElement | null>(null);
+  const [draftPositions, setDraftPositions] = useState<Partial<Record<CanvasElement, CanvasPoint>>>(
+    {}
+  );
+  const { doc, update } = useProject();
   const geometry = stageGeometry(doc, size, phoneAspect);
+  const basePlacement = compose(doc, phoneAspect);
+  const sourceOrder = normalizeSourceOrder(doc.sourceOrder);
+  const phoneBaseHeight = Math.round(basePlacement.phone.h * geometry.ch);
+  const phoneBaseWidth = Math.round(phoneBaseHeight * phoneAspect);
+  const cameraBaseWidth = basePlacement.cam ? Math.round(basePlacement.cam.w * geometry.cw) : 0;
+  const cameraBaseHeight = basePlacement.cam ? Math.round(basePlacement.cam.h * geometry.ch) : 0;
   const phonePlaybackSource = playbackSource(phoneSource);
   const webcamPlaybackSource = playbackSource(webcamSource);
   const microphonePlaybackSource = playbackSource(microphoneSource);
@@ -85,15 +136,38 @@ export function CanvasStage({
     doc.frame,
     doc.radius
   );
+  const phoneFrame: ResizeFrame = {
+    x: geometry.phoneLeft,
+    y: geometry.phoneTop,
+    baseWidth: phoneBaseWidth,
+    baseHeight: phoneBaseHeight,
+    width: geometry.phoneWidth,
+    height: geometry.phoneHeight,
+    radius: phoneMetrics.outerRadius,
+    minScale: PHONE_SCALE_MIN / PHONE_SCALE_DEFAULT,
+    maxScale: PHONE_SCALE_MAX / PHONE_SCALE_DEFAULT,
+    scaleBase: PHONE_SCALE_DEFAULT,
+  };
+  const cameraFrame: ResizeFrame = {
+    x: geometry.camLeft,
+    y: geometry.camTop,
+    baseWidth: cameraBaseWidth,
+    baseHeight: cameraBaseHeight,
+    width: geometry.camWidth,
+    height: geometry.camHeight,
+    radius: geometry.camRadius,
+    minScale: CAMERA_SIZE_MIN / CAMERA_SCALE_REFERENCE,
+    maxScale: CAMERA_SIZE_MAX / CAMERA_SCALE_REFERENCE,
+    scaleBase: CAMERA_SCALE_REFERENCE,
+  };
+  const phonePosition = draftPositions.phone ?? { x: phoneFrame.x, y: phoneFrame.y };
+  const cameraPosition = draftPositions.camera ?? { x: cameraFrame.x, y: cameraFrame.y };
   const phoneAssetUrl = useAssetUrl(phonePlaybackSource?.filePath);
   const webcamAssetUrl = useAssetUrl(webcamPlaybackSource?.filePath);
   const microphoneAssetUrl = useAssetUrl(microphonePlaybackSource?.filePath);
   const phoneVolume = volumePercentToGain(doc.phoneVol ?? 100);
   const webcamVolume = volumePercentToGain(doc.webcamVol ?? 100);
   const microphoneVolume = volumePercentToGain(doc.mic);
-  // New webcam+mic recordings store the selected mic inside webcam.mov.
-  // In that case the webcam video owns the voice playback; a second audio element would duplicate
-  // the same recording and can drift against the speaker's mouth.
   const visibleWebcamCarriesMicrophoneAudio =
     geometry.hasCam &&
     Boolean(webcamAssetUrl && microphoneAssetUrl) &&
@@ -103,6 +177,7 @@ export function CanvasStage({
     : webcamVolume;
   const visibleWebcamMuted =
     visibleWebcamVolume <= 0 || (visibleWebcamCarriesMicrophoneAudio && doc.muted);
+  const sourceZIndex = (layer: SourceLayer) => 10 + sourceOrder.indexOf(layer);
 
   useEffect(() => {
     timeRef.current = time;
@@ -142,19 +217,124 @@ export function CanvasStage({
     }
   };
 
-  const updatePhonePosition = (_event: DraggableEvent, data: DraggableData) => {
-    update({ phoneX: data.x / geometry.cw, phoneY: data.y / geometry.ch });
+  const selectElement = (element: CanvasElement) => {
+    setSelectedElement(element);
+    onSelectElement?.(element);
   };
 
-  const updateCameraPosition = (_event: DraggableEvent, data: DraggableData) => {
-    update({ camX: data.x / geometry.cw, camY: data.y / geometry.ch });
+  const updateDragDraft =
+    (element: CanvasElement) => (_event: DraggableEvent, data: DraggableData) => {
+      setDraftPositions((current) => ({ ...current, [element]: { x: data.x, y: data.y } }));
+    };
+
+  const finishDrag = (element: CanvasElement) => (_event: DraggableEvent, data: DraggableData) => {
+    if (element === "phone") {
+      update({ phoneX: data.x / geometry.cw, phoneY: data.y / geometry.ch });
+    } else {
+      update({ camX: data.x / geometry.cw, camY: data.y / geometry.ch });
+    }
+    setDraftPositions((current) => {
+      const next = { ...current };
+      delete next[element];
+      return next;
+    });
+  };
+
+  const startResize = (event: PointerEvent<HTMLButtonElement>, element: CanvasElement) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const frame = element === "phone" ? phoneFrame : cameraFrame;
+    if (frame.baseWidth <= 0 || frame.baseHeight <= 0) return;
+
+    resizeSessionRef.current = {
+      element,
+      anchorX: frame.x,
+      anchorY: frame.y,
+      startScaleX: frame.width / frame.baseWidth,
+      startScaleY: frame.height / frame.baseHeight,
+      frame,
+      pointerId: event.pointerId,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    selectElement(element);
+  };
+
+  const updateResize = (event: PointerEvent<HTMLButtonElement>, quiet = true) => {
+    const session = resizeSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    const pointer = pointerOnStage(event, hostRef.current);
+
+    if (session.element === "phone") {
+      const scaleX = (pointer.x - session.anchorX) / session.frame.baseWidth;
+      const scaleY = (pointer.y - session.anchorY) / session.frame.baseHeight;
+      const dominantScale =
+        Math.abs(scaleX - session.startScaleX) >= Math.abs(scaleY - session.startScaleY)
+          ? scaleX
+          : scaleY;
+      const scale = clamp(
+        dominantScale,
+        session.frame.minScale,
+        session.frame.maxScale
+      );
+
+      update(
+        {
+          phoneScale: Math.round(scale * session.frame.scaleBase),
+          phoneX: session.anchorX / geometry.cw,
+          phoneY: session.anchorY / geometry.ch,
+        },
+        quiet
+      );
+      return;
+    }
+
+    const scaleX = clamp(
+      (pointer.x - session.anchorX) / session.frame.baseWidth,
+      session.frame.minScale,
+      session.frame.maxScale
+    );
+    const scaleY = clamp(
+      (pointer.y - session.anchorY) / session.frame.baseHeight,
+      session.frame.minScale,
+      session.frame.maxScale
+    );
+    const camScaleX = Math.round(scaleX * session.frame.scaleBase);
+    const camScaleY = Math.round(scaleY * session.frame.scaleBase);
+
+    update(
+      {
+        camScale: Math.round((camScaleX + camScaleY) / 2),
+        camScaleX,
+        camScaleY,
+        camX: session.anchorX / geometry.cw,
+        camY: session.anchorY / geometry.ch,
+      },
+      quiet
+    );
+  };
+
+  const finishResize = (event: PointerEvent<HTMLButtonElement>) => {
+    const session = resizeSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    updateResize(event, false);
+    resizeSessionRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const clearSelectionOnCanvas = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    setSelectedElement(null);
   };
 
   const phoneRef = useNativePreview<HTMLDivElement>({
     surface: "phone",
     uniqueId: phoneUniqueId,
     enabled: Boolean(phoneUniqueId) && !phoneAssetUrl,
-    radius: phoneMetrics.outerRadius,
+    radius: phoneFrame.radius,
     hostRef,
   });
 
@@ -162,7 +342,7 @@ export function CanvasStage({
     surface: "webcam",
     uniqueId: webcamUniqueId,
     enabled: geometry.hasCam && Boolean(webcamUniqueId) && !webcamAssetUrl,
-    radius: geometry.camRadius,
+    radius: cameraFrame.radius,
     mirror: doc.mirror,
     hostRef,
   });
@@ -217,6 +397,7 @@ export function CanvasStage({
       if (next >= doc.dur) {
         window.clearInterval(timer);
         for (const slot of slots) {
+          syncSlotToTimeline(slot, next, false);
           slot.element.pause();
           slot.element.playbackRate = 1;
         }
@@ -244,30 +425,33 @@ export function CanvasStage({
   return (
     <div
       className={cn("shadow-stage relative shrink-0 overflow-hidden rounded-[10px]", className)}
+      onPointerDown={clearSelectionOnCanvas}
       ref={hostRef}
       style={{ width: geometry.cw, height: geometry.ch, background: backgroundCss(doc) }}
     >
       <Draggable
-        defaultPosition={{ x: geometry.phoneLeft, y: geometry.phoneTop }}
-        key={`phone-${activeProject?.id ?? "default"}-${geometry.cw}-${geometry.ch}`}
+        cancel="[data-resize-node]"
         nodeRef={phoneNodeRef}
-        onStop={updatePhonePosition}
+        onDrag={updateDragDraft("phone")}
+        onStart={() => selectElement("phone")}
+        onStop={finishDrag("phone")}
+        position={phonePosition}
       >
         <div
-          className="ease-glide absolute cursor-grab transition-[width,height] duration-300 active:cursor-grabbing"
-          onPointerDown={() => onSelectElement?.("phone")}
+          className="absolute cursor-grab active:cursor-grabbing"
           ref={phoneNodeRef}
           style={{
-            width: geometry.phoneWidth,
-            height: geometry.phoneHeight,
+            width: phoneFrame.width,
+            height: phoneFrame.height,
+            zIndex: sourceZIndex("phone"),
           }}
         >
           {phoneAssetUrl ? (
             <DeviceFrame
               bezel={doc.frame}
-              height={geometry.phoneHeight}
+              height={phoneFrame.height}
               radius={doc.radius}
-              width={geometry.phoneWidth}
+              width={phoneFrame.width}
             >
               <RecordedVideo
                 className="h-full w-full"
@@ -286,28 +470,41 @@ export function CanvasStage({
           ) : (
             <DeviceFrame
               bezel={doc.frame}
-              height={geometry.phoneHeight}
+              height={phoneFrame.height}
               radius={doc.radius}
-              width={geometry.phoneWidth}
+              width={phoneFrame.width}
             />
           )}
+          <SelectionOverlay frame={phoneFrame} selected={selectedElement === "phone"} />
+          {selectedElement === "phone" ? (
+            <ResizeNode
+              frame={phoneFrame}
+              label="Resize phone"
+              onPointerCancel={finishResize}
+              onPointerDown={(event) => startResize(event, "phone")}
+              onPointerMove={updateResize}
+              onPointerUp={finishResize}
+            />
+          ) : null}
         </div>
       </Draggable>
 
       {geometry.hasCam ? (
         <Draggable
-          defaultPosition={{ x: geometry.camLeft, y: geometry.camTop }}
-          key={`camera-${activeProject?.id ?? "default"}-${geometry.cw}-${geometry.ch}`}
+          cancel="[data-resize-node]"
           nodeRef={cameraNodeRef}
-          onStop={updateCameraPosition}
+          onDrag={updateDragDraft("camera")}
+          onStart={() => selectElement("camera")}
+          onStop={finishDrag("camera")}
+          position={cameraPosition}
         >
           <div
-            className="ease-glide absolute cursor-grab transition-[width,height] duration-300 active:cursor-grabbing"
-            onPointerDown={() => onSelectElement?.("camera")}
+            className="absolute cursor-grab active:cursor-grabbing"
             ref={cameraNodeRef}
             style={{
-              width: geometry.camWidth,
-              height: geometry.camHeight,
+              width: cameraFrame.width,
+              height: cameraFrame.height,
+              zIndex: sourceZIndex("camera"),
             }}
           >
             <div className="h-full w-full" ref={webcamRef}>
@@ -315,7 +512,7 @@ export function CanvasStage({
                 crop={doc.crop}
                 live={Boolean(webcamAssetUrl || webcamUniqueId)}
                 mirrored={doc.mirror}
-                radius={geometry.camRadius}
+                radius={cameraFrame.radius}
               >
                 {webcamAssetUrl ? (
                   <RecordedVideo
@@ -332,6 +529,17 @@ export function CanvasStage({
                 ) : null}
               </CameraBubble>
             </div>
+            <SelectionOverlay frame={cameraFrame} selected={selectedElement === "camera"} />
+            {selectedElement === "camera" ? (
+              <ResizeNode
+                frame={cameraFrame}
+                label="Resize camera"
+                onPointerCancel={finishResize}
+                onPointerDown={(event) => startResize(event, "camera")}
+                onPointerMove={updateResize}
+                onPointerUp={finishResize}
+              />
+            ) : null}
           </div>
         </Draggable>
       ) : null}
@@ -359,6 +567,65 @@ function useAssetUrl(filePath?: string | null) {
     }
     return filePath;
   }, [filePath]);
+}
+
+function SelectionOverlay({ frame, selected }: { frame: ResizeFrame; selected: boolean }) {
+  if (!selected) return null;
+
+  return (
+    <div
+      className="border-accent pointer-events-none absolute inset-0 z-10 border"
+      style={{ borderRadius: frame.radius }}
+    />
+  );
+}
+
+function ResizeNode({
+  frame,
+  label,
+  onPointerCancel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+}: {
+  frame: ResizeFrame;
+  label: string;
+  onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void;
+}) {
+  return (
+    <button
+      aria-label={label}
+      className="border-bright-line bg-bright-top shadow-knob absolute z-20 grid -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize place-items-center rounded-full p-0 outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      data-resize-node
+      onMouseDown={(event) => event.stopPropagation()}
+      onPointerCancel={onPointerCancel}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      style={{
+        left: frame.width,
+        top: frame.height,
+        width: RESIZE_HANDLE_SIZE,
+        height: RESIZE_HANDLE_SIZE,
+      }}
+      type="button"
+    >
+      <span className="bg-accent block size-1.5 rounded-full" />
+    </button>
+  );
+}
+
+function pointerOnStage(event: PointerEvent, host: HTMLElement | null) {
+  if (!host) return { x: event.clientX, y: event.clientY };
+  const rect = host.getBoundingClientRect();
+  return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function isActiveSlot(slot: MediaSlot): slot is ActiveMediaSlot {
@@ -404,19 +671,13 @@ function slotMediaTime(slot: ActiveMediaSlot, time: number) {
 
 function timelineState(slot: ActiveMediaSlot, time: number) {
   if (time < slotStartSeconds(slot)) return "before";
-  if (time > slotEndSeconds(slot)) return "after";
+  if (time >= slotEndSeconds(slot)) return "after";
   return "active";
 }
 
 function seekSlot(slot: ActiveMediaSlot, time: number) {
   const next = slotMediaTime(slot, time);
-  try {
-    slot.element.currentTime = Number.isFinite(slot.element.duration)
-      ? Math.min(next, slot.element.duration)
-      : next;
-  } catch {
-    return;
-  }
+  seekMediaElement(slot.element, next);
 }
 
 function timelineTime(slot: ActiveMediaSlot) {
@@ -425,12 +686,21 @@ function timelineTime(slot: ActiveMediaSlot) {
 
 function seekMediaElement(element: HTMLMediaElement, time: number) {
   try {
-    element.currentTime = Number.isFinite(element.duration)
-      ? Math.min(time, element.duration)
-      : time;
+    element.currentTime = safeMediaTime(element, time);
   } catch {
     return;
   }
+}
+
+function safeMediaTime(element: HTMLMediaElement, time: number) {
+  const duration = elementDuration(element);
+  if (!duration) return Math.max(0, time);
+  return Math.max(0, Math.min(time, Math.max(0, duration - LAST_VISIBLE_FRAME_OFFSET)));
+}
+
+function lastVisibleMediaTime(element: HTMLMediaElement, fallbackDuration: number) {
+  const duration = elementDuration(element) ?? fallbackDuration;
+  return Math.max(0, duration - LAST_VISIBLE_FRAME_OFFSET);
 }
 
 function syncSlotToTimeline(slot: ActiveMediaSlot, time: number, playing: boolean) {
@@ -446,7 +716,7 @@ function syncSlotToTimeline(slot: ActiveMediaSlot, time: number, playing: boolea
   if (state === "after") {
     slot.element.pause();
     slot.element.playbackRate = 1;
-    seekMediaElement(slot.element, elementDuration(slot.element) ?? slot.source.durationMs / 1000);
+    seekMediaElement(slot.element, lastVisibleMediaTime(slot.element, slot.source.durationMs / 1000));
     return;
   }
 
@@ -525,7 +795,7 @@ function RecordedVideo({
       muted={muted}
       onLoadedMetadata={(event) => {
         const video = event.currentTarget;
-        video.currentTime = Math.min(current, video.duration || current);
+        video.currentTime = safeMediaTime(video, current);
         onMetadata?.();
       }}
       playsInline
@@ -567,7 +837,7 @@ function RecordedAudio({
       muted={muted}
       onLoadedMetadata={(event) => {
         const audio = event.currentTarget;
-        audio.currentTime = Math.min(current, audio.duration || current);
+        audio.currentTime = safeMediaTime(audio, current);
         onMetadata?.();
       }}
       preload="auto"

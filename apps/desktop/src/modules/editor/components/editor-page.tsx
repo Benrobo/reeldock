@@ -15,7 +15,12 @@ export function EditorPage() {
   const { ref, size } = useStageSize();
   const project = useEditorProjectSession();
   const timeline = useEditorTimeline(project.doc);
-  const exportModal = useEditorExport();
+  const exportModal = useEditorExport({
+    activeProject: project.activeProject,
+    doc: project.doc,
+    sourceTracks: project.sourceTracks,
+    onProjectSaved: project.markSaved,
+  });
   const [section, setSection] = useState<EditorSection>("canvas");
 
   const updateDoc = (patch: Partial<ProjectDoc>, quiet?: boolean) => {
@@ -76,16 +81,19 @@ export function EditorPage() {
       />
 
       <EditorExportModal
-        duration={project.doc.dur}
+        duration={exportModal.duration ?? project.doc.dur}
         error={exportModal.error}
         nativeExportAvailable={exportModal.nativeExportAvailable}
         open={exportModal.open}
+        outputPath={exportModal.outputPath}
         progress={exportModal.progress}
         readyTrackCount={project.readyTracks}
         ratio={exportModal.ratio}
         state={exportModal.state}
+        width={project.doc.ratio === "custom" ? project.doc.cw : undefined}
+        height={project.doc.ratio === "custom" ? project.doc.chh : undefined}
         onDismiss={() => exportModal.setOpen(false)}
-        onRatioChange={exportModal.setRatio}
+        onReveal={() => void exportModal.reveal()}
         onStart={() => void exportModal.start()}
       />
     </main>
