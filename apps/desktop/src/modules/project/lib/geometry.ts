@@ -1,4 +1,9 @@
-import { CAMERA_SHAPES, CAMERA_SIZE_DEFAULT, type CameraShape } from "@reeldock/shared";
+import {
+  CAMERA_SHAPES,
+  CAMERA_SCALE_REFERENCE,
+  PHONE_SCALE_DEFAULT,
+  type CameraShape,
+} from "@reeldock/shared";
 import { DEFAULT_PHONE_ASPECT } from "@/constants/preview";
 import type { ProjectDoc } from "../types";
 
@@ -32,7 +37,16 @@ export type CameraFrame = {
 
 export function aspect(doc: ProjectDoc): number {
   if (doc.ratio === "custom") return doc.cw / doc.chh;
-  return { "16:9": 16 / 9, "9:16": 9 / 16, "1:1": 1 }[doc.ratio] ?? 16 / 9;
+  return {
+    "16:9": 16 / 9,
+    "9:16": 9 / 16,
+    "1:1": 1,
+    "4:5": 4 / 5,
+    "5:4": 5 / 4,
+    "4:3": 4 / 3,
+    "3:4": 3 / 4,
+    "21:9": 21 / 9,
+  }[doc.ratio] ?? 16 / 9;
 }
 
 export function compose(doc: ProjectDoc, phoneAspect = DEFAULT_PHONE_ASPECT): Placement {
@@ -95,13 +109,16 @@ export function cameraFrame(
   const { cam } = compose(doc, phoneAspect);
   if (!cam) return null;
 
-  const camScale = doc.camScale / CAMERA_SIZE_DEFAULT;
+  const camScaleX = (doc.camScaleX ?? doc.camScale) / CAMERA_SCALE_REFERENCE;
+  const camScaleY = (doc.camScaleY ?? doc.camScale) / CAMERA_SCALE_REFERENCE;
+  const width = cam.w * camScaleX;
+  const height = cam.h * camScaleY;
 
   return {
-    x: doc.camX ?? cam.x,
-    y: doc.camY ?? cam.y,
-    w: cam.w * camScale,
-    h: cam.h * camScale,
+    x: doc.camX ?? cam.x + (cam.w - width) / 2,
+    y: doc.camY ?? cam.y + (cam.h - height) / 2,
+    w: width,
+    h: height,
   };
 }
 
@@ -129,10 +146,12 @@ export function stageGeometry(
   const ch = Math.floor(Math.min(stage.h, stage.w / a));
   const cw = Math.round(ch * a);
   const { phone } = compose(doc, phoneAspect);
-  const phoneHeight = phone.h * ch;
-  const phoneWidth = phoneHeight * phoneAspect;
-  const phoneX = doc.phoneX ?? phone.x;
-  const phoneY = doc.phoneY ?? phone.y;
+  const phoneScale = (doc.phoneScale ?? PHONE_SCALE_DEFAULT) / PHONE_SCALE_DEFAULT;
+  const basePhoneWidth = (phone.h * phoneAspect) / a;
+  const scaledPhoneWidth = basePhoneWidth * phoneScale;
+  const scaledPhoneHeight = phone.h * phoneScale;
+  const phoneX = doc.phoneX ?? phone.x + (basePhoneWidth - scaledPhoneWidth) / 2;
+  const phoneY = doc.phoneY ?? phone.y + (phone.h - scaledPhoneHeight) / 2;
   const camera = cameraFrame(doc, phoneAspect);
   const camWidth = camera ? Math.round(camera.w * cw) : 0;
   const camHeight = camera ? Math.round(camera.h * ch) : 0;
@@ -143,8 +162,8 @@ export function stageGeometry(
     ch,
     phoneLeft: Math.round(phoneX * cw),
     phoneTop: Math.round(phoneY * ch),
-    phoneWidth: Math.round(phoneWidth),
-    phoneHeight: Math.round(phoneHeight),
+    phoneWidth: Math.round(scaledPhoneWidth * cw),
+    phoneHeight: Math.round(scaledPhoneHeight * ch),
     hasCam: Boolean(camera),
     camLeft: camera ? Math.round(camera.x * cw) : 0,
     camTop: camera ? Math.round(camera.y * ch) : 0,

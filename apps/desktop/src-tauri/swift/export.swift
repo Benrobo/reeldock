@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreGraphics
+import ImageIO
 import CoreMedia
 import CoreVideo
 import Foundation
@@ -10,6 +11,7 @@ private struct NativeExportInput: Codable {
   let ratio: String
   let doc: NativeExportDoc
   let tracks: [NativeExportTrack]
+  let backgroundImagePath: String?
 }
 
 private struct NativeExportTrack: Codable {
@@ -26,6 +28,7 @@ private struct NativeExportSegment: Codable {
 
 private struct NativeExportDoc: Codable {
   let phoneSize: String
+  let phoneScale: Double?
   let frame: Bool
   let shadow: Bool
   let radius: Double
@@ -33,6 +36,8 @@ private struct NativeExportDoc: Codable {
   let camOn: Bool
   let camShape: String
   let camScale: Double
+  let camScaleX: Double?
+  let camScaleY: Double?
   let camRoundness: Double
   let mirror: Bool
   let crop: Double
@@ -41,6 +46,8 @@ private struct NativeExportDoc: Codable {
   let grad: Int
   let pat: Int
   let fit: String
+  let cw: Double
+  let chh: Double
   let pad: Double
   let mic: Double
   let phoneVol: Double
@@ -52,6 +59,7 @@ private struct NativeExportDoc: Codable {
   let phoneY: Double?
   let camX: Double?
   let camY: Double?
+  let sourceOrder: [String]?
 }
 
 private struct NativeExportResult: Codable {
@@ -63,6 +71,15 @@ private struct NativeExportResult: Codable {
 private struct NativeExportError: Codable {
   let error: String
 }
+
+private struct NativeExportProgress: Codable {
+  let projectId: String
+  let progress: Double
+  let stage: String
+}
+
+private typealias NativeExportProgressCallback = (String) -> Void
+public typealias NativeExportProgressC = @convention(c) (UnsafePointer<CChar>?) -> Void
 
 private struct NativeExportTimelineSpan {
   let originalStart: Double
@@ -138,15 +155,19 @@ private final class NativeExportVisualSource {
 
 private final class NativeProjectExporter {
   private let input: NativeExportInput
+  private let progress: NativeExportProgressCallback?
   private let frameRate = 30
   private let timescale: CMTimeScale = 600
   private let colorSpace = CGColorSpaceCreateDeviceRGB()
+  private let cameraScaleReference: CGFloat = 100
 
-  init(input: NativeExportInput) {
+  init(input: NativeExportInput, progress: NativeExportProgressCallback? = nil) {
     self.input = input
+    self.progress = progress
   }
 
   func export() throws -> NativeExportResult {
+    reportProgress(2, stage: "Preparing export")
     let outputURL = URL(fileURLWithPath: input.outputPath)
     let outputDirectory = outputURL.deletingLastPathComponent()
     try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
@@ -171,6 +192,7 @@ private final class NativeProjectExporter {
 
     let renderSize = outputSize()
     let visualSources = try makeVisualSources()
+    reportProgress(8, stage: "Reading source tracks")
     try renderSilentVideo(
       to: tempVideoURL,
       renderSize: renderSize,
@@ -178,6 +200,7 @@ private final class NativeProjectExporter {
       spans: spans,
       visualSources: visualSources
     )
+    reportProgress(82, stage: "Mixing audio")
     try muxAudio(
       silentVideoURL: tempVideoURL,
       outputURL: outputURL,
@@ -185,12 +208,26 @@ private final class NativeProjectExporter {
       spans: spans
     )
     try? FileManager.default.removeItem(at: tempVideoURL)
+    reportProgress(100, stage: "Done")
 
     return NativeExportResult(
       ok: true,
       outputPath: input.outputPath,
       durationMs: max(1, Int(totalDuration * 1000))
     )
+  }
+
+  private func reportProgress(_ progressValue: Double, stage: String) {
+    guard let progress else { return }
+    let event = NativeExportProgress(
+      projectId: input.projectId,
+      progress: max(0, min(100, progressValue)),
+      stage: stage
+    )
+    guard let data = try? JSONEncoder().encode(event),
+      let json = String(data: data, encoding: .utf8)
+    else { return }
+    progress(json)
   }
 
   private func makeVisualSources() throws -> [String: NativeExportVisualSource] {
@@ -257,6 +294,7 @@ private final class NativeProjectExporter {
     let frameCount = max(1, Int(ceil(totalDuration * Double(frameRate))))
     let phoneAspect = visualSources["phone"]?.aspect(fallback: 390 / 844) ?? 390 / 844
     let geometry = exportGeometry(renderSize: renderSize, phoneAspect: phoneAspect)
+    let progressStep = max(1, frameRate / 2)
     var renderError: Error?
 
     for frameIndex in 0..<frameCount {
@@ -292,6 +330,11 @@ private final class NativeProjectExporter {
             NSLocalizedDescriptionKey: writer.error?.localizedDescription ?? "Could not append export frame."
           ])
           return
+        }
+
+        if frameIndex % progressStep == 0 || frameIndex == frameCount - 1 {
+          let progressValue = 10 + (Double(frameIndex + 1) / Double(frameCount)) * 70
+          reportProgress(progressValue, stage: "Compositing sources")
         }
       }
     }
@@ -365,7 +408,9 @@ private final class NativeProjectExporter {
     exportSession.exportAsynchronously {
       semaphore.signal()
     }
-    semaphore.wait()
+    while semaphore.wait(timeout: .now() + 0.2) == .timedOut {
+      reportProgress(82 + Double(exportSession.progress) * 16, stage: "Writing MP4")
+    }
 
     guard exportSession.status == .completed else {
       throw NSError(domain: "ReelDockExport", code: 8, userInfo: [
@@ -482,24 +527,43 @@ private final class NativeProjectExporter {
     context.scaleBy(x: 1, y: -1)
     drawBackground(context: context, size: renderSize)
 
-    if let phoneImage = visualSources["phone"]?.image(at: originalTime) {
-      drawPhone(image: phoneImage, context: context, rect: geometry.phone.cgRect)
+    for layer in sourceLayerOrder() {
+      if layer == "phone", let phoneImage = visualSources["phone"]?.image(at: originalTime) {
+        drawPhone(image: phoneImage, context: context, rect: geometry.phone.cgRect)
+      }
+
+      if layer == "camera",
+        let cameraRect = geometry.camera?.cgRect,
+        let webcamImage = visualSources["webcam"]?.image(at: originalTime)
+      {
+        drawRoundedImage(
+          image: webcamImage,
+          context: context,
+          rect: cameraRect,
+          radius: geometry.cameraRadius,
+          positionX: CGFloat(max(0, min(100, input.doc.crop)) / 100),
+          positionY: 0.5,
+          zoom: 1,
+          mirrored: input.doc.mirror
+        )
+      }
+    }
+  }
+
+  private func sourceLayerOrder() -> [String] {
+    var result: [String] = []
+
+    func appendLayer(_ layer: String) {
+      guard (layer == "phone" || layer == "camera") && !result.contains(layer) else { return }
+      result.append(layer)
     }
 
-    if let cameraRect = geometry.camera?.cgRect,
-      let webcamImage = visualSources["webcam"]?.image(at: originalTime)
-    {
-      drawRoundedImage(
-        image: webcamImage,
-        context: context,
-        rect: cameraRect,
-        radius: geometry.cameraRadius,
-        positionX: CGFloat(max(0, min(100, input.doc.crop)) / 100),
-        positionY: 0.5,
-        zoom: 1,
-        mirrored: input.doc.mirror
-      )
+    for layer in input.doc.sourceOrder ?? [] {
+      appendLayer(layer)
     }
+    appendLayer("phone")
+    appendLayer("camera")
+    return result
   }
 
   private func drawPhone(image: CGImage, context: CGContext, rect: CGRect) {
@@ -571,6 +635,11 @@ private final class NativeProjectExporter {
   }
 
   private func drawBackground(context: CGContext, size: CGSize) {
+    if input.doc.bgKind == "image", let image = backgroundImage() {
+      drawBackgroundImage(image: image, context: context, size: size)
+      return
+    }
+
     if input.doc.bgKind == "gradient" {
       let colors = gradientColors(index: input.doc.grad)
       if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: [0, 1]) {
@@ -586,6 +655,66 @@ private final class NativeProjectExporter {
 
     context.setFillColor(backgroundColor())
     context.fill(CGRect(origin: .zero, size: size))
+  }
+
+  private func drawBackgroundImage(image: CGImage, context: CGContext, size: CGSize) {
+    let imageSize = CGSize(width: image.width, height: image.height)
+    guard imageSize.width > 0, imageSize.height > 0 else { return }
+
+    let scale: CGFloat = input.doc.fit == "contain"
+      ? min(size.width / imageSize.width, size.height / imageSize.height)
+      : max(size.width / imageSize.width, size.height / imageSize.height)
+    let drawSize = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
+    let drawRect = CGRect(
+      x: (size.width - drawSize.width) / 2,
+      y: (size.height - drawSize.height) / 2,
+      width: drawSize.width,
+      height: drawSize.height
+    )
+
+    context.setFillColor(backgroundColor())
+    context.fill(CGRect(origin: .zero, size: size))
+    context.draw(image, in: drawRect)
+  }
+
+  private func backgroundImage() -> CGImage? {
+    if let image = backgroundDataImage() {
+      return image
+    }
+    guard let path = input.backgroundImagePath ?? backgroundImagePathFromDoc() else { return nil }
+    let expandedPath = expandHome(path)
+    guard FileManager.default.fileExists(atPath: expandedPath) else { return nil }
+    let url = URL(fileURLWithPath: expandedPath)
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+    return CGImageSourceCreateImageAtIndex(source, 0, nil)
+  }
+
+  private func backgroundDataImage() -> CGImage? {
+    guard input.doc.bg.hasPrefix("data:"),
+      let comma = input.doc.bg.firstIndex(of: ",")
+    else { return nil }
+    let encoded = String(input.doc.bg[input.doc.bg.index(after: comma)...])
+    guard let data = Data(base64Encoded: encoded),
+      let source = CGImageSourceCreateWithData(data as CFData, nil)
+    else { return nil }
+    return CGImageSourceCreateImageAtIndex(source, 0, nil)
+  }
+
+  private func backgroundImagePathFromDoc() -> String? {
+    if input.doc.bg.hasPrefix("file://") {
+      return String(input.doc.bg.dropFirst("file://".count))
+    }
+    if input.doc.bg.hasPrefix("/") || input.doc.bg.hasPrefix("~/") {
+      return input.doc.bg
+    }
+    return nil
+  }
+
+  private func expandHome(_ path: String) -> String {
+    guard path.hasPrefix("~/") else { return path }
+    return FileManager.default.homeDirectoryForCurrentUser
+      .appendingPathComponent(String(path.dropFirst(2)))
+      .path
   }
 
   private func makePixelBuffer(
@@ -608,19 +737,52 @@ private final class NativeProjectExporter {
     let y0 = padY
     let availableWidth = 1 - 2 * padX
     let availableHeight = 1 - 2 * padY
-    let phoneHeight = availableHeight * phoneHeightFactor()
-    let phoneWidth = phoneHeight * phoneAspect / canvasAspect
-    let defaultPhone = normalizedPhoneRect(
-      x: x0 + (availableWidth - phoneWidth) / 2,
-      y: y0 + (availableHeight - phoneHeight) / 2,
-      width: phoneWidth,
-      height: phoneHeight,
-      renderSize: renderSize
-    )
+    let basePhoneHeight = availableHeight * phoneHeightFactor()
+    let basePhoneWidth = basePhoneHeight * phoneAspect / canvasAspect
 
+    let basePhoneX: CGFloat
+    let basePhoneY: CGFloat
+    let baseCameraX: CGFloat
+    let baseCameraY: CGFloat
+    let baseCameraWidth: CGFloat
+    let baseCameraHeight: CGFloat
+
+    if input.doc.camOn {
+      let cameraAspect = cameraAspectRatio()
+      baseCameraHeight = basePhoneHeight * 0.8
+      baseCameraWidth = baseCameraHeight * cameraAspect / canvasAspect
+      let gap = min(availableWidth * 0.055, 0.055)
+      let groupWidth = basePhoneWidth + gap + baseCameraWidth
+
+      if groupWidth <= availableWidth {
+        let groupX = x0 + (availableWidth - groupWidth) / 2
+        basePhoneX = groupX
+        basePhoneY = y0 + (availableHeight - basePhoneHeight) / 2
+        baseCameraX = groupX + basePhoneWidth + gap
+        baseCameraY = y0 + (availableHeight - baseCameraHeight) / 2
+      } else {
+        basePhoneX = x0 + (availableWidth - basePhoneWidth) / 2
+        basePhoneY = y0 + (availableHeight - basePhoneHeight) / 2
+        baseCameraX = x0 + availableWidth - baseCameraWidth
+        baseCameraY = y0 + availableHeight - baseCameraHeight
+      }
+    } else {
+      basePhoneX = x0 + (availableWidth - basePhoneWidth) / 2
+      basePhoneY = y0 + (availableHeight - basePhoneHeight) / 2
+      baseCameraX = 0
+      baseCameraY = 0
+      baseCameraWidth = 0
+      baseCameraHeight = 0
+    }
+
+    let phoneScale = CGFloat((input.doc.phoneScale ?? 100) / 100)
+    let phoneWidth = basePhoneWidth * phoneScale
+    let phoneHeight = basePhoneHeight * phoneScale
+    let defaultPhoneX = basePhoneX + (basePhoneWidth - phoneWidth) / 2
+    let defaultPhoneY = basePhoneY + (basePhoneHeight - phoneHeight) / 2
     let phone = normalizedPhoneRect(
-      x: CGFloat(input.doc.phoneX ?? Double(defaultPhone.x / renderSize.width)),
-      y: CGFloat(input.doc.phoneY ?? Double(defaultPhone.y / renderSize.height)),
+      x: CGFloat(input.doc.phoneX ?? Double(defaultPhoneX)),
+      y: CGFloat(input.doc.phoneY ?? Double(defaultPhoneY)),
       width: phoneWidth,
       height: phoneHeight,
       renderSize: renderSize
@@ -630,31 +792,15 @@ private final class NativeProjectExporter {
       return NativeExportGeometry(phone: phone, camera: nil, cameraRadius: 0)
     }
 
-    let cameraAspect = cameraAspectRatio()
-    let setupCameraHeightRatio: CGFloat = 0.8
-    let setupCameraGapRatio: CGFloat = 0.055
-    let camHeight = phoneHeight * setupCameraHeightRatio
-    let camWidth = camHeight * cameraAspect / canvasAspect
-    let gap = min(availableWidth * setupCameraGapRatio, 0.055)
-    let groupWidth = phoneWidth + gap + camWidth
-    let defaultCameraX: CGFloat
-    let defaultCameraY: CGFloat
-
-    if groupWidth <= availableWidth {
-      let groupX = x0 + (availableWidth - groupWidth) / 2
-      defaultCameraX = groupX + phoneWidth + gap
-      defaultCameraY = y0 + (availableHeight - camHeight) / 2
-    } else {
-      defaultCameraX = x0 + availableWidth - camWidth
-      defaultCameraY = y0 + availableHeight - camHeight
-    }
-
-    let camScale = CGFloat(input.doc.camScale / 70)
-    let cameraWidth = camWidth * camScale
-    let cameraHeight = camHeight * camScale
+    let camScaleX = CGFloat((input.doc.camScaleX ?? input.doc.camScale) / Double(cameraScaleReference))
+    let camScaleY = CGFloat((input.doc.camScaleY ?? input.doc.camScale) / Double(cameraScaleReference))
+    let cameraWidth = baseCameraWidth * camScaleX
+    let cameraHeight = baseCameraHeight * camScaleY
+    let scaledDefaultCameraX = baseCameraX + (baseCameraWidth - cameraWidth) / 2
+    let scaledDefaultCameraY = baseCameraY + (baseCameraHeight - cameraHeight) / 2
     let camera = normalizedPhoneRect(
-      x: CGFloat(input.doc.camX ?? Double(defaultCameraX)),
-      y: CGFloat(input.doc.camY ?? Double(defaultCameraY)),
+      x: CGFloat(input.doc.camX ?? Double(scaledDefaultCameraX)),
+      y: CGFloat(input.doc.camY ?? Double(scaledDefaultCameraY)),
       width: cameraWidth,
       height: cameraHeight,
       renderSize: renderSize
@@ -723,9 +869,26 @@ private final class NativeProjectExporter {
       return CGSize(width: 1080, height: 1920)
     case "1:1":
       return CGSize(width: 1080, height: 1080)
+    case "4:5":
+      return CGSize(width: 1080, height: 1350)
+    case "5:4":
+      return CGSize(width: 1350, height: 1080)
+    case "4:3":
+      return CGSize(width: 1440, height: 1080)
+    case "3:4":
+      return CGSize(width: 1080, height: 1440)
+    case "21:9":
+      return CGSize(width: 2560, height: 1080)
+    case "custom":
+      return CGSize(width: evenDimension(input.doc.cw), height: evenDimension(input.doc.chh))
     default:
       return CGSize(width: 1920, height: 1080)
     }
+  }
+
+  private func evenDimension(_ value: Double) -> CGFloat {
+    let clamped = max(320, min(3840, Int(value.rounded())))
+    return CGFloat(clamped - clamped % 2)
   }
 
   private func phoneHeightFactor() -> CGFloat {
@@ -822,6 +985,14 @@ private func exportErrorJson(_ error: Error) -> UnsafeMutablePointer<CChar>? {
 public func reeldock_export_project_json(
   _ inputJson: UnsafePointer<CChar>?
 ) -> UnsafeMutablePointer<CChar>? {
+  reeldock_export_project_json_with_progress(inputJson, nil)
+}
+
+@_cdecl("reeldock_export_project_json_with_progress")
+public func reeldock_export_project_json_with_progress(
+  _ inputJson: UnsafePointer<CChar>?,
+  _ progressCallback: NativeExportProgressC?
+) -> UnsafeMutablePointer<CChar>? {
   guard let inputJson else {
     return exportJson(NativeExportError(error: "Export input was missing."))
   }
@@ -829,7 +1000,14 @@ public func reeldock_export_project_json(
   do {
     let data = Data(String(cString: inputJson).utf8)
     let input = try JSONDecoder().decode(NativeExportInput.self, from: data)
-    return exportJson(try NativeProjectExporter(input: input).export())
+    let callback: NativeExportProgressCallback? = progressCallback.map { progressCallback in
+      { json in
+        json.withCString { pointer in
+          progressCallback(pointer)
+        }
+      }
+    }
+    return exportJson(try NativeProjectExporter(input: input, progress: callback).export())
   } catch {
     return exportErrorJson(error)
   }

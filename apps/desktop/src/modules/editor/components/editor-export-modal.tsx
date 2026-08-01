@@ -9,7 +9,6 @@ import {
   SettingsRow,
   SurfaceRow,
   ValueChip,
-  cn,
 } from "@reeldock/ui";
 import { RATIO_RESOLUTIONS, type CanvasRatio } from "@reeldock/shared";
 import { ColorIcon } from "@/components/color-icon";
@@ -25,10 +24,11 @@ type EditorExportModalProps = {
   outputPath: string | null;
   progress: number;
   readyTrackCount: number;
-  ratio: Exclude<CanvasRatio, "custom">;
+  ratio: CanvasRatio;
   state: ExportState;
+  width?: number;
+  height?: number;
   onDismiss: () => void;
-  onRatioChange: (ratio: Exclude<CanvasRatio, "custom">) => void;
   onReveal: () => void;
   onStart: () => void;
 };
@@ -43,8 +43,9 @@ export function EditorExportModal({
   readyTrackCount,
   ratio,
   state,
+  width,
+  height,
   onDismiss,
-  onRatioChange,
   onReveal,
   onStart,
 }: EditorExportModalProps) {
@@ -83,12 +84,20 @@ export function EditorExportModal({
       title="Export"
     >
       {state === "idle" ? (
-        <ExportIdle readyTrackCount={readyTrackCount} ratio={ratio} onRatioChange={onRatioChange} />
+        <ExportIdle readyTrackCount={readyTrackCount} ratio={ratio} width={width} height={height} />
       ) : null}
 
       {state === "running" ? <ExportRunning progress={progress} /> : null}
 
-      {state === "done" ? <ExportDone duration={duration} outputPath={outputPath} ratio={ratio} /> : null}
+      {state === "done" ? (
+        <ExportDone
+          duration={duration}
+          height={height}
+          outputPath={outputPath}
+          ratio={ratio}
+          width={width}
+        />
+      ) : null}
 
       {state === "failed" ? <ExportFailed error={error} /> : null}
     </Modal>
@@ -98,48 +107,25 @@ export function EditorExportModal({
 function ExportIdle({
   readyTrackCount,
   ratio,
-  onRatioChange,
+  width,
+  height,
 }: {
   readyTrackCount: number;
-  ratio: Exclude<CanvasRatio, "custom">;
-  onRatioChange: (ratio: Exclude<CanvasRatio, "custom">) => void;
+  ratio: CanvasRatio;
+  width?: number;
+  height?: number;
 }) {
+  const resolution = canvasResolution(ratio, width, height);
+
   return (
     <div className="px-7 pt-[22px]">
-      <div className="text-fg-hint mb-3 text-[11px] font-semibold uppercase tracking-[0.11em]">
-        Aspect ratio
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        {(["16:9", "9:16", "1:1"] as const).map((item) => (
-          <button
-            className={cn(
-              "rd-press border-raised-line bg-linear-to-b from-raised-top to-raised-bottom shadow-row rounded-[10px] border p-3",
-              ratio === item && "border-accent bg-accent/[12%]"
-            )}
-            key={item}
-            onClick={() => onRatioChange(item)}
-            type="button"
-          >
-            <span className="bg-well shadow-well mx-auto flex h-[132px] items-center justify-center rounded-[8px]">
-              <span
-                className="bg-screen relative block rounded"
-                style={{
-                  width: item === "9:16" ? 54 : item === "1:1" ? 92 : 128,
-                  height: item === "9:16" ? 120 : item === "1:1" ? 92 : 72,
-                }}
-              >
-                <span className="bg-window absolute left-[38%] top-[10%] h-[80%] w-[24%] rounded-[7px]" />
-                <span className="bg-camera-mini absolute bottom-[18%] right-[14%] size-[24%] rounded-full" />
-              </span>
-            </span>
-            <span className="mt-2.5 block text-[12.5px] font-semibold">{item}</span>
-            <span className="font-ui-mono text-fg-3 mt-[3px] block text-[11px]">
-              {RATIO_RESOLUTIONS[item]}
-            </span>
-          </button>
-        ))}
-      </div>
-      <SettingsList className="mt-[22px]">
+      <SettingsList>
+        <SettingsRow label="Canvas">
+          <ValueChip>{ratio === "custom" ? "Custom" : ratio}</ValueChip>
+        </SettingsRow>
+        <SettingsRow label="Resolution">
+          <ValueChip>{resolution}</ValueChip>
+        </SettingsRow>
         <SettingsRow label="Tracks">
           <ValueChip>{readyTrackCount} ready</ValueChip>
         </SettingsRow>
@@ -184,12 +170,16 @@ function ExportRunning({ progress }: { progress: number }) {
 
 function ExportDone({
   duration,
+  height,
   outputPath,
   ratio,
+  width,
 }: {
   duration: number;
+  height?: number;
   outputPath: string | null;
-  ratio: Exclude<CanvasRatio, "custom">;
+  ratio: CanvasRatio;
+  width?: number;
 }) {
   return (
     <div className="px-7 pt-[30px]">
@@ -200,12 +190,17 @@ function ExportDone({
             {outputPath ?? "Project exports"}
           </div>
           <div className="text-fg-hint mt-1.5 text-[12.5px]">
-            {RATIO_RESOLUTIONS[ratio]} - {timecode(duration)}
+            {canvasResolution(ratio, width, height)} - {timecode(duration)}
           </div>
         </div>
       </SurfaceRow>
     </div>
   );
+}
+
+function canvasResolution(ratio: CanvasRatio, width?: number, height?: number) {
+  if (ratio === "custom") return `${width ?? 1600} × ${height ?? 1200}`;
+  return RATIO_RESOLUTIONS[ratio] ?? ratio;
 }
 
 function ExportFailed({ error }: { error: string | null }) {

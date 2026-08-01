@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { CanvasRatio } from "@reeldock/shared";
 import type { ActiveProject, ProjectDoc } from "@/modules/project";
 import {
   projectFilesService,
@@ -26,7 +25,6 @@ export function useEditorExport({
 }: UseEditorExportOptions) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<ExportState>("idle");
-  const [ratio, setRatio] = useState<Exclude<CanvasRatio, "custom">>("16:9");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [outputPath, setOutputPath] = useState<string | null>(null);
@@ -75,15 +73,18 @@ export function useEditorExport({
       onProjectSaved(projectForExport);
       setProgress(18);
 
-      job = await projectsService.createExport(projectForExport, ratio);
+      job = await projectsService.createExport(projectForExport, doc.ratio);
       setProgress(28);
 
       const result = await exportProject({
         projectId: projectForExport.id,
         outputPath: job.filePath,
-        ratio,
+        ratio: doc.ratio,
         doc,
         tracks: recordedTracks,
+        onProgress: ({ progress }) => {
+          setProgress(Math.round(progress));
+        },
       });
       setProgress(92);
 
@@ -117,10 +118,9 @@ export function useEditorExport({
     openModal,
     outputPath,
     progress,
-    ratio,
+    ratio: doc.ratio,
     reveal,
     setOpen,
-    setRatio,
     start,
     state,
   };

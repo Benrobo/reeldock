@@ -90,8 +90,9 @@ export function EditorPage() {
         readyTrackCount={project.readyTracks}
         ratio={exportModal.ratio}
         state={exportModal.state}
+        width={project.doc.ratio === "custom" ? project.doc.cw : undefined}
+        height={project.doc.ratio === "custom" ? project.doc.chh : undefined}
         onDismiss={() => exportModal.setOpen(false)}
-        onRatioChange={exportModal.setRatio}
         onReveal={() => void exportModal.reveal()}
         onStart={() => void exportModal.start()}
       />

@@ -19,9 +19,23 @@ import {
   PHONE_ZOOM_DEFAULT,
   PHONE_ZOOM_MAX,
   PHONE_ZOOM_MIN,
+  PHONE_SCALE_DEFAULT,
+  PHONE_SCALE_MAX,
+  PHONE_SCALE_MIN,
 } from "@reeldock/shared";
 
 export type Segment = { start: number; end: number };
+export const SOURCE_LAYERS = ["phone", "camera"] as const;
+export type SourceLayer = (typeof SOURCE_LAYERS)[number];
+export const DEFAULT_SOURCE_ORDER: SourceLayer[] = ["phone", "camera"];
+
+export function normalizeSourceOrder(order?: readonly SourceLayer[] | null): SourceLayer[] {
+  const next = (order ?? []).filter((layer, index, layers) => layers.indexOf(layer) === index);
+  for (const layer of DEFAULT_SOURCE_ORDER) {
+    if (!next.includes(layer)) next.push(layer);
+  }
+  return next;
+}
 
 const segmentSchema = z.object({
   start: z.number().min(0),
@@ -29,14 +43,30 @@ const segmentSchema = z.object({
 });
 
 const normalizedPositionSchema = z.number().nullable().default(null);
+const sourceLayerSchema = z.enum(SOURCE_LAYERS);
+const sourceOrderSchema = z
+  .array(sourceLayerSchema)
+  .default(DEFAULT_SOURCE_ORDER)
+  .transform((order) => normalizeSourceOrder(order));
 const cameraShapeSchema = z.preprocess(
   (value) => (value === "rect" ? "horizontal" : value),
   z.enum(CAMERA_SHAPE_IDS)
 );
 
 export const projectDocSchema = z.object({
-  ratio: z.enum(["16:9", "9:16", "1:1", "custom"]) satisfies z.ZodType<CanvasRatio>,
+  ratio: z.enum([
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:5",
+    "5:4",
+    "4:3",
+    "3:4",
+    "21:9",
+    "custom",
+  ]) satisfies z.ZodType<CanvasRatio>,
   phoneSize: z.enum(["S", "M", "L"]) satisfies z.ZodType<ElementSize>,
+  phoneScale: z.number().min(PHONE_SCALE_MIN).max(PHONE_SCALE_MAX).default(PHONE_SCALE_DEFAULT),
   frame: z.boolean(),
   shadow: z.boolean(),
   radius: z.number().min(0).max(80),
@@ -44,6 +74,8 @@ export const projectDocSchema = z.object({
   camOn: z.boolean(),
   camShape: cameraShapeSchema satisfies z.ZodType<CameraShape>,
   camScale: z.number().min(CAMERA_SIZE_MIN).max(CAMERA_SIZE_MAX).default(CAMERA_SIZE_DEFAULT),
+  camScaleX: z.number().min(CAMERA_SIZE_MIN).max(CAMERA_SIZE_MAX).default(CAMERA_SIZE_DEFAULT),
+  camScaleY: z.number().min(CAMERA_SIZE_MIN).max(CAMERA_SIZE_MAX).default(CAMERA_SIZE_DEFAULT),
   camRoundness: z
     .number()
     .min(CAMERA_ROUNDNESS_MIN)
@@ -69,6 +101,7 @@ export const projectDocSchema = z.object({
   phoneY: normalizedPositionSchema,
   camX: normalizedPositionSchema,
   camY: normalizedPositionSchema,
+  sourceOrder: sourceOrderSchema,
 });
 
 export type ProjectDoc = z.infer<typeof projectDocSchema>;
@@ -76,6 +109,7 @@ export type ProjectDoc = z.infer<typeof projectDocSchema>;
 export const DEFAULT_DOC = projectDocSchema.parse({
   ratio: "16:9",
   phoneSize: "L",
+  phoneScale: PHONE_SCALE_DEFAULT,
   frame: true,
   shadow: true,
   radius: 34,
@@ -83,6 +117,8 @@ export const DEFAULT_DOC = projectDocSchema.parse({
   camOn: true,
   camShape: "circle",
   camScale: CAMERA_SIZE_DEFAULT,
+  camScaleX: CAMERA_SIZE_DEFAULT,
+  camScaleY: CAMERA_SIZE_DEFAULT,
   camRoundness: CAMERA_ROUNDNESS_DEFAULT,
   mirror: true,
   crop: 50,
@@ -100,4 +136,5 @@ export const DEFAULT_DOC = projectDocSchema.parse({
   muted: false,
   dur: 64,
   segments: [{ start: 2.5, end: 58 }],
+  sourceOrder: DEFAULT_SOURCE_ORDER,
 });
