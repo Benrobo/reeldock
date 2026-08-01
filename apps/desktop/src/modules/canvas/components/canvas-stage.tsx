@@ -76,9 +76,8 @@ type ResizeFrame = CanvasPoint & {
 
 type ResizeSession = {
   element: CanvasElement;
-  centerX: number;
-  centerY: number;
-  startDistance: number;
+  anchorX: number;
+  anchorY: number;
   startScaleX: number;
   startScaleY: number;
   frame: ResizeFrame;
@@ -246,15 +245,11 @@ export function CanvasStage({
     event.stopPropagation();
     const frame = element === "phone" ? phoneFrame : cameraFrame;
     if (frame.baseWidth <= 0 || frame.baseHeight <= 0) return;
-    const centerX = frame.x + frame.width / 2;
-    const centerY = frame.y + frame.height / 2;
-    const pointer = pointerOnStage(event, hostRef.current);
 
     resizeSessionRef.current = {
       element,
-      centerX,
-      centerY,
-      startDistance: Math.max(1, distance(pointer.x, pointer.y, centerX, centerY)),
+      anchorX: frame.x,
+      anchorY: frame.y,
       startScaleX: frame.width / frame.baseWidth,
       startScaleY: frame.height / frame.baseHeight,
       frame,
@@ -272,25 +267,23 @@ export function CanvasStage({
     const pointer = pointerOnStage(event, hostRef.current);
 
     if (session.element === "phone") {
-      const nextDistance = Math.max(
-        1,
-        distance(pointer.x, pointer.y, session.centerX, session.centerY)
-      );
+      const scaleX = (pointer.x - session.anchorX) / session.frame.baseWidth;
+      const scaleY = (pointer.y - session.anchorY) / session.frame.baseHeight;
+      const dominantScale =
+        Math.abs(scaleX - session.startScaleX) >= Math.abs(scaleY - session.startScaleY)
+          ? scaleX
+          : scaleY;
       const scale = clamp(
-        session.startScaleX * (nextDistance / session.startDistance),
+        dominantScale,
         session.frame.minScale,
         session.frame.maxScale
       );
-      const width = session.frame.baseWidth * scale;
-      const height = session.frame.baseHeight * scale;
-      const x = session.centerX - width / 2;
-      const y = session.centerY - height / 2;
 
       update(
         {
           phoneScale: Math.round(scale * session.frame.scaleBase),
-          phoneX: x / geometry.cw,
-          phoneY: y / geometry.ch,
+          phoneX: session.anchorX / geometry.cw,
+          phoneY: session.anchorY / geometry.ch,
         },
         quiet
       );
@@ -298,19 +291,15 @@ export function CanvasStage({
     }
 
     const scaleX = clamp(
-      (Math.abs(pointer.x - session.centerX) * 2) / session.frame.baseWidth,
+      (pointer.x - session.anchorX) / session.frame.baseWidth,
       session.frame.minScale,
       session.frame.maxScale
     );
     const scaleY = clamp(
-      (Math.abs(pointer.y - session.centerY) * 2) / session.frame.baseHeight,
+      (pointer.y - session.anchorY) / session.frame.baseHeight,
       session.frame.minScale,
       session.frame.maxScale
     );
-    const width = session.frame.baseWidth * scaleX;
-    const height = session.frame.baseHeight * scaleY;
-    const x = session.centerX - width / 2;
-    const y = session.centerY - height / 2;
     const camScaleX = Math.round(scaleX * session.frame.scaleBase);
     const camScaleY = Math.round(scaleY * session.frame.scaleBase);
 
@@ -319,8 +308,8 @@ export function CanvasStage({
         camScale: Math.round((camScaleX + camScaleY) / 2),
         camScaleX,
         camScaleY,
-        camX: x / geometry.cw,
-        camY: y / geometry.ch,
+        camX: session.anchorX / geometry.cw,
+        camY: session.anchorY / geometry.ch,
       },
       quiet
     );
@@ -334,6 +323,11 @@ export function CanvasStage({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+  };
+
+  const clearSelectionOnCanvas = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    setSelectedElement(null);
   };
 
   const phoneRef = useNativePreview<HTMLDivElement>({
@@ -431,6 +425,7 @@ export function CanvasStage({
   return (
     <div
       className={cn("shadow-stage relative shrink-0 overflow-hidden rounded-[10px]", className)}
+      onPointerDown={clearSelectionOnCanvas}
       ref={hostRef}
       style={{ width: geometry.cw, height: geometry.ch, background: backgroundCss(doc) }}
     >
@@ -627,10 +622,6 @@ function pointerOnStage(event: PointerEvent, host: HTMLElement | null) {
   if (!host) return { x: event.clientX, y: event.clientY };
   const rect = host.getBoundingClientRect();
   return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-}
-
-function distance(x: number, y: number, centerX: number, centerY: number) {
-  return Math.hypot(x - centerX, y - centerY);
 }
 
 function clamp(value: number, min: number, max: number) {

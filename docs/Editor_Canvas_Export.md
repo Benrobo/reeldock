@@ -140,14 +140,13 @@ Resize behavior lives in:
 
 The editor renders one resize node at the bottom-right of the selected source.
 
-The resize session stores the element center at the moment resizing starts:
+The resize session stores the element's top-left corner at the moment resizing starts:
 
 ```ts
 resizeSessionRef.current = {
   element,
-  centerX,
-  centerY,
-  startDistance: Math.max(1, distance(pointer.x, pointer.y, centerX, centerY)),
+  anchorX: frame.x,
+  anchorY: frame.y,
   startScaleX: frame.width / frame.baseWidth,
   startScaleY: frame.height / frame.baseHeight,
   frame,
@@ -160,26 +159,24 @@ resizeSessionRef.current = {
 The phone resizes uniformly. Width and height keep the phone aspect ratio:
 
 ```ts
-const scale = clamp(
-  session.startScaleX * (nextDistance / session.startDistance),
-  session.frame.minScale,
-  session.frame.maxScale
-);
+const scaleX = (pointer.x - session.anchorX) / session.frame.baseWidth;
+const scaleY = (pointer.y - session.anchorY) / session.frame.baseHeight;
+const dominantScale =
+  Math.abs(scaleX - session.startScaleX) >= Math.abs(scaleY - session.startScaleY)
+    ? scaleX
+    : scaleY;
 
-const width = session.frame.baseWidth * scale;
-const height = session.frame.baseHeight * scale;
-const x = session.centerX - width / 2;
-const y = session.centerY - height / 2;
+const scale = clamp(dominantScale, session.frame.minScale, session.frame.maxScale);
 ```
 
-The key point is this:
+The saved position stays anchored:
 
 ```ts
-const x = session.centerX - width / 2;
-const y = session.centerY - height / 2;
+phoneX: session.anchorX / geometry.cw,
+phoneY: session.anchorY / geometry.ch,
 ```
 
-That keeps the source scaling around its center. The top-left position changes only because the box is getting bigger or smaller around the same center.
+That means the bottom-right resize node controls the bottom/right edge. The phone should not grow upward when the user drags the node down.
 
 ### Camera Resize
 
@@ -187,13 +184,13 @@ The camera can resize freely by width and height:
 
 ```ts
 const scaleX = clamp(
-  (Math.abs(pointer.x - session.centerX) * 2) / session.frame.baseWidth,
+  (pointer.x - session.anchorX) / session.frame.baseWidth,
   session.frame.minScale,
   session.frame.maxScale
 );
 
 const scaleY = clamp(
-  (Math.abs(pointer.y - session.centerY) * 2) / session.frame.baseHeight,
+  (pointer.y - session.anchorY) / session.frame.baseHeight,
   session.frame.minScale,
   session.frame.maxScale
 );
@@ -207,8 +204,8 @@ update(
     camScale: Math.round((camScaleX + camScaleY) / 2),
     camScaleX,
     camScaleY,
-    camX: x / geometry.cw,
-    camY: y / geometry.ch,
+    camX: session.anchorX / geometry.cw,
+    camY: session.anchorY / geometry.ch,
   },
   quiet
 );
@@ -525,7 +522,7 @@ Custom dimensions are clamped to `320...3840` and made even because H.264 encode
 
 ### Export Geometry
 
-Swift mirrors the same centered scaling logic used in React:
+For default placement, Swift centers scaled sources around their base positions:
 
 ```swift
 let phoneScale = CGFloat((input.doc.phoneScale ?? 100) / 100)
